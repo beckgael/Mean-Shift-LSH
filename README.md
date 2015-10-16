@@ -7,14 +7,14 @@ Mean Shift strenght is automatic detection of cluster number and contrary to K-m
 ## Recomandations
 
 It is recommand to normalize data unless your data has already features with the same order of magnitude due to distance computation.
-The nbseg parameter should be big enough, under 20 results could be wrong.
-The nbblocs parameter is the bottleneck of this algorithm, the bigger it is the faster it computate but you risk to loose in quality.
+The *nbseg* parameter should be big enough, under 20 results could be wrong.
+The *nbblocs* parameter is the bottleneck of this algorithm, the bigger it is the faster it computate but you risk to loose in quality.
 
 ## Image analysis recommandation
 In order to do image analysis it is recommand to convert data from RGB to Luv space and adding space index.
 
 ## Usage
-This algorithm is build to work with indexed dataset. Usage is preety simple. Prepare your parsed dataset giving him index and rest of data.
+This algorithm is build to work with indexed dataset. Usage is preety simple. Prepare your parsed dataset giving him index and rest of data. Use other function to save result or make prediction for new data.
 
 ```scala
 

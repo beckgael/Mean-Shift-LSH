@@ -31,7 +31,7 @@ This algorithm is build to work with indexed dataset. Usage is preety simple. Pr
   val sc = new SparkContext(conf)
   val defp = sc.defaultParallelism
   val meanShift = msLsh.MsLsh
-  val data = sc.textFile("myIndexedData.csv",numPart)
+  val data = sc.textFile("myIndexedData.csv",defp)
   val parsedData = data.map(x => x.split(',')).map(y => new Data_Object(y(0),Vectors.dense(y.tail.map(_.toDouble)))).cache
   
   val model = meanShift.train(  sc,

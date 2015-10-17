@@ -7,8 +7,18 @@ Mean Shift strenght is automatic detection of cluster number and contrary to K-m
 ## Recomandations
 
 It is recommand to normalize data unless your data has already features with the same order of magnitude due to distance computation.
-The *nbseg* parameter should be big enough, under 20 results could be wrong.
-The *nbblocs* parameter is the bottleneck of this algorithm, the bigger it is the faster it computate but you risk to loose in quality.
+
+### Paramaters
+
+* **k** is the number of neighbours to look at in order to compute centoid.
+* **nbseg** number of segment on which we project vectors during LSH, this parameter should be big enough, under 20 results could be wrong depending on your data.
+* **nbblocs** parameter is the bottleneck of this algorithm, the bigger it is the faster it compute but you risk to loose quality.
+* **cmin** is the threshold under which we fusion little cluster with the nearest cluster.
+* **normalisation** define if you want normalize your data following this formula (X-Xmin)/(Xmax-Xmin).
+* **w** is a uniformisation constant for LSH.
+* **npPart** is the default parallelism outside the gradient ascent.
+* **iterForYstar** is the number of iteration in gradient ascent
+* **threshold_clust** is the threshold under which we give the same label to two points
 
 ## Image analysis recommandation
 In order to do image analysis it is recommand to convert data from RGB to Luv space and adding space index.
@@ -21,7 +31,7 @@ This algorithm is build to work with indexed dataset. Usage is preety simple. Pr
   val sc = new SparkContext(conf)
   val defp = sc.defaultParallelism
   val meanShift = msLsh.MsLsh
-  val data = sc.textFile("mydataIndexed.csv",numPart)
+  val data = sc.textFile("myIndexedData.csv",numPart)
   var parsedData = data.map(x => x.split(',')).map(y => new Data_Object(y(0),Vectors.dense(y.tail.map(_.toDouble)))).cache
   
   val model = meanShift.train(  sc,

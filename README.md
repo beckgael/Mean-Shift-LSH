@@ -24,7 +24,7 @@ It is recommand to normalize data unless your data has already features with the
 In order to do image analysis it is recommand to convert data from RGB to Luv space and adding space index.
 
 ## Usage
-This algorithm is build to work with indexed dataset. Usage is preety simple. Prepare your parsed dataset giving him index and rest of data. Use other function to save result or make prediction for new data.
+This algorithm is build to work with indexed dataset. Usage is preety simple. Prepare your parsed dataset giving him index and rest of data. Use other functions to save result or make prediction for new data.
 
 ```scala
 

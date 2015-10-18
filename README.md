@@ -20,7 +20,7 @@ It is recommand to normalize data unless your data has already features with the
 * **iterForYstar** is the number of iteration in gradient ascent
 * **threshold_clust** is the threshold under which we give the same label to two points
 
-## Image analysis recommandation
+### Image analysis
 In order to do image analysis it is recommand to convert data from RGB to Luv space and adding space index.
 
 ## Usage
@@ -46,14 +46,25 @@ This algorithm is build to work with indexed dataset. Usage is preety simple. Pr
                           nbblocs=50,
                           nbPart=defp)  
                           
-  // Save result for an image as (ID,Vector,ClusterNumber)
-  meanShift.saveImageAnalysis(model,"MyImageResultDirectory",1)
+  // Save result for an image as (ID, Vector, ClusterNumber)
+  meanShift.saveImageAnalysis(sc, model, "MyImageResultDirectory",1)
 
-  // Save result as (ID,ClusterNumber)
-  meanShift.savelabeling(model,"MyResultDirectory",1)
+  // Save result as (ID, ClusterNumber)
+  meanShift.savelabeling(model, "MyResultDirectory", 1)
 
-  // Save centroids result as (NumCluster,cardinality,CentroidVector)
-  meanShift.saveCentroid(sc,model,"centroidDirectory")
+  // Save centroids result as (NumCluster, cardinality, CentroidVector)
+  meanShift.saveCentroid(sc, model, "centroidDirectory")
 
 ```
 
+## Image segmentation example
+
+The picture on top left corner is the #117 from Berkeley Segmentation Dataset and Benchmark repository. Others are obtained with :
+* **nbblocs** of 200,500,1000
+* **k** : 50
+* **iterForYstar** : 10
+* **w** : 1
+* **cmin** : 200
+![alt text][logo]
+
+[logo]: http://img11.hostingpics.net/pics/393309flower.png

@@ -10,7 +10,7 @@ It is recommand to normalize data unless your data has already features with the
 
 ### Paramaters
 
-* **k** is the number of neighbours to look at in order to compute centoid.
+* **k** is the number of neighbours to look at in order to compute centroid.
 * **nbseg** number of segment on which we project vectors during LSH, this parameter should be big enough, under 20 results could be wrong depending on your data.
 * **nbblocs** parameter is the bottleneck of this algorithm, the bigger it is the faster it compute but you risk to loose quality.
 * **cmin** is the threshold under which we fusion little cluster with the nearest cluster.

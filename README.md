@@ -60,8 +60,9 @@ This algorithm is build to work with indexed dataset. Usage is preety simple. Pr
 ## Image segmentation example
 
 The picture on top left corner is the #117 from Berkeley Segmentation Dataset and Benchmark repository. Others are obtained with :
-* **nbblocs** of 200,500,1000
+* **nbblocs** : 200 (top right) , 500, 1000 (bottom right) 
 * **k** : 50
+* **threshold_clust** : 0.05
 * **iterForYstar** : 10
 * **w** : 1
 * **cmin** : 200

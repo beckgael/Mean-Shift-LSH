@@ -17,8 +17,8 @@ It is recommand to normalize data unless your data has already features with the
 * **normalisation** define if you want normalize your data following this formula (X-Xmin)/(Xmax-Xmin).
 * **w** is a uniformisation constant for LSH.
 * **npPart** is the default parallelism outside the gradient ascent.
-* **iterForYstar** is the number of iteration in gradient ascent
-* **threshold_clust** is the threshold under which we give the same label to two points
+* **yStarIter** is the number of iteration in gradient ascent
+* **threshold_cluster** is the threshold under which we give the same label to two points
 
 ### Image analysis
 In order to do image analysis it is recommand to convert data from RGB to Luv space and adding space index.
@@ -37,8 +37,8 @@ This algorithm is build to work with indexed dataset. Usage is preety simple. Pr
   val model = meanShift.train(  sc,
                           parsedData,
                           k=60,
-                          threshold_clust=0.05,
-                          iterForYstar=10,
+                          threshold_cluster=0.05,
+                          yStarIter=10,
                           cmin=0,
                           normalisation=true,
                           w=1,
@@ -47,13 +47,13 @@ This algorithm is build to work with indexed dataset. Usage is preety simple. Pr
                           nbPart=defp)  
                           
   // Save result for an image as (ID, Vector, ClusterNumber)
-  meanShift.saveImageAnalysis(sc, model, "MyImageResultDirectory",1)
+  meanShift.saveImageAnalysis(model, "MyImageResultDirectory",1)
 
   // Save result as (ID, ClusterNumber)
   meanShift.savelabeling(model, "MyResultDirectory", 1)
 
   // Save centroids result as (NumCluster, cardinality, CentroidVector)
-  meanShift.saveCentroid(sc, model, "centroidDirectory")
+  meanShift.saveClusterInfo(sc, model, "centroidDirectory")
 
 ```
 
@@ -62,8 +62,8 @@ This algorithm is build to work with indexed dataset. Usage is preety simple. Pr
 The picture on top left corner is the #117 from Berkeley Segmentation Dataset and Benchmark repository. Others are obtained with :
 * **nbblocs** : 200 (top right) , 500, 1000 (bottom right) 
 * **k** : 50
-* **threshold_clust** : 0.05
-* **iterForYstar** : 10
+* **threshold_cluster** : 0.05
+* **yStarIter** : 10
 * **w** : 1
 * **cmin** : 200
 ![alt text][logo]

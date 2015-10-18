@@ -2,7 +2,7 @@
 
 This algorithm was created during an internship at Laboratoire d'Informatique de Paris Nord with Lebbah Mustapha, Duong Tarn, Azzag Hanene and Beck Gaël.
 It's purpose is clustering of multivariate multidimensional dataset, especialy image.
-Mean Shift strenght is automatic detection of cluster number and contrary to K-means it can detect non eliptical clusters.
+Mean Shift strenght is automatic detection of cluster number and contrary to K-means it can detect **non eliptical clusters**.
 
 ## Recomandations
 
@@ -69,3 +69,6 @@ The picture on top left corner is the #117 from Berkeley Segmentation Dataset an
 ![alt text][logo]
 
 [logo]: http://img11.hostingpics.net/pics/393309flower.png
+
+## Contribution
+Please feel free te report any issue or tips in order to improve this algorithm

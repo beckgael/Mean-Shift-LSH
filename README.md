@@ -19,12 +19,14 @@ It is recommand to normalize data unless your data has already features with the
 * **npPart** is the default parallelism outside the gradient ascent.
 * **yStarIter** is the number of iteration in gradient ascent
 * **threshold_cluster** is the threshold under which we give the same label to two points
+* **magnitudeArray** is an array of double which define which features are more relevant than others
 
 ### Image analysis
 In order to do image analysis it is recommand to convert data from RGB to Luv space and adding space index.
 
 ## Usage
 This algorithm is build to work with indexed dataset. Usage is preety simple. Prepare your parsed dataset giving him index and rest of data. Use other functions to save result or make prediction for new data.
+For **magnitudeArray** the smaller the value is the more important the associate feature is.
 
 ```scala
 
@@ -44,7 +46,8 @@ This algorithm is build to work with indexed dataset. Usage is preety simple. Pr
                           w=1,
                           nbseg=100,
                           nbblocs=50,
-                          nbPart=defp)  
+                          nbPart=defp,
+                          magnitudeArray=Array(1.0,1.0,0.5,0.5,0.5))  
                           
   // Save result for an image as (ID, Vector, ClusterNumber)
   meanShift.saveImageAnalysis(model, "MyImageResultDirectory",1)

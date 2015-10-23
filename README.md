@@ -16,7 +16,7 @@ This algorithm was created during an internship at Computer Science Laboratory (
 
 ## Usage
 
-## Multivariate multidimensional clustering
+### Multivariate multidimensional clustering
 Unlike the image analysis which has a specific data pre-processing before the mean shift, for general multivariate multidimensional data sets, it is recommended to normalize data so that each variable has a comparable magnitude to the other variables to improve the performance in the distance matrix computation used to determine nearest neighbors.
 
 ### Image analysis
@@ -53,7 +53,7 @@ To carry out image analysis, it is recommended to convert the usual color format
 
 ```
 
-## Image segmentation example
+#### Image segmentation example
 
 The picture on top left corner is the #117 from Berkeley Segmentation Dataset and Benchmark repository. Others are obtained with :
 * **nbblocs** : 200 (top right) , 500 (bottom left), 1000 (bottom right) 

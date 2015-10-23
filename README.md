@@ -5,8 +5,8 @@ This algorithm was created during an internship at Computer Science Laboratory (
 ### Parameters
 
 * **k** is the number of neighbours to look at in order to compute centroid.
-* **nbseg**  is a crucial parameter as larger values give faster but less accurate LSH approximate nearest neighbors, and as smaller values give slower but more accurate approximations.
-* **nbblocs** is the number of segments on which the data vectors are projected during LSH. Its value should usually be larger than 20, depending on the data set.
+* **nbseg**  is the number of segments on which the data vectors are projected during LSH. Its value should usually be larger than 20, depending on the data set.
+* **nbblocs**  is a crucial parameter as larger values give faster but less accurate LSH approximate nearest neighbors, and as smaller values give slower but more accurate approximations.
 * **cmin**  is the threshold under which clusters with fewer than cmin members are merged with the next nearest cluster.
 * **normalisation** is a flag if the data should be first normalized (X-Xmin)/(Xmax-Xmin)  before clustering.
 * **w** is a uniformisation constant for LSH.

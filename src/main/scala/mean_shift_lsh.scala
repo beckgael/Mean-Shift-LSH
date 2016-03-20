@@ -510,7 +510,7 @@ object MsLsh {
    * Results look's like RDD[ID,Centroïd_Vector,cluster_Number]
    */
   def saveImageAnalysis(msmodel:mean_shift_lsh_model, folder:String,numpart:Int=1) : Unit = {
-    val rdd_final = msmodel.rdd.map(x=>(x._2._1.toInt,msmodel.clustersCenter(x._1),x._1))
+    val rdd_final = descaleRDD(msmodel.rdd,msmodel.maxMinArray).map(x=>(x._2._1.toInt,msmodel.clustersCenter(x._1),x._1))
     rdd_final.coalesce(numpart,true).sortBy(_._1).saveAsTextFile(folder)  
   }
 

@@ -318,12 +318,19 @@ class MsLsh private (
       else rdd_res = rdd_LSH_ord.map(x => (x._1,x._3,x._2))
     }
 
-  	var ind1 = 0
-  	var rdd_Ystar_ind = rdd_res.coalesce(numPart,true).cache
-  	var vector0 = rdd_Ystar_ind.first._2
-  	var stop = 1
-  	var tab_ind : Array[Array[String]] = Array()
+
+    var ind1 = 0
+    var rdd_Ystar_ind = rdd_res.coalesce(numPart,true).cache
+    var vector0 = rdd_Ystar_ind.first._2
+    var stop = 1
+    var tab_ind : Array[Array[String]] = Array()
     var rdd0 : RDD[(String,(String,Vector,Vector))] = sc.emptyRDD
+
+    ww.destroy()
+    b.destroy()
+    tabHash0.destroy()
+    hasher.destroy()
+    centroider.destroy()
 
   	while ( stop != 0 ) {
       // We mesure distance from Y* to others et we keep closest

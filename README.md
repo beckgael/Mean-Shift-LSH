@@ -67,7 +67,7 @@ The picture on top left corner is the #117 from Berkeley Segmentation Dataset an
 [logo]: http://img11.hostingpics.net/pics/393309flower.png
 
 ## Common problem
-If you set a too low value for threshold_cluster, you will observe a rapid increase of the execution times from minutes to hours and days. This problem is now solved and we've passed on the labeling step from 2500s to 2s for a 0.005 value with **gain** in quality for a 3 slaves slaves cluster. The algorithm is now fully scalable and i will push upgrade in the next month.
+If you set a too low value for threshold_cluster, you will observe a rapid increase of the execution times from minutes to hours and days. This problem is now solved and we've passed on the labeling step from 2500s to 2s for a 0.005 value with **gain** in quality for a 6 slaves cluster. The algorithm is now fully scalable and i will push upgrade in the next month.
 
 ## Maintenance
 Please feel free to report any bugs, recommendations or requests to beck.gael@gmail.com to improve this algorithm.

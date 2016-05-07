@@ -25,20 +25,20 @@ package msLsh
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 
-class mean_shift_lsh_model(val clustersCenter:Map[String,Vector], val rdd:RDD[(String,(String,Vector))] ,val maxMinArray:Array[Array[Double]]) extends Serializable {
+class Mean_shift_lsh_model(val clustersCenter:Map[String,Vector], val rdd:RDD[(String,(String,Vector))] ,val maxMinArray:Array[Array[Double]]) extends Serializable {
 
   def numCluster : Int = clustersCenter.size
 
   def predict(point:Vector) : String = {
-  	MsLsh.prediction(point,clustersCenter)
+    MsLsh.prediction(point,clustersCenter)
   }
 
   def predict(points:Array[Vector]) : Array[String] = {
-  	var res : Array[String] = Array()
-  	for( ind <- 0 to points.size-1) {
-  		res = res :+ MsLsh.prediction(points(ind),clustersCenter)
-  	}
-  	res
+    var res : Array[String] = Array()
+    for( ind <- 0 to points.size-1) {
+      res = res :+ MsLsh.prediction(points(ind),clustersCenter)
+    }
+    res
   }
 
 

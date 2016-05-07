@@ -1,19 +1,20 @@
 # Distributed Nearest Neighbours Mean Shift with Locality Sensitive Hashing DNNMS-LSH
 
-This algorithm was created during an internship at Computer Science Laboratory (Laboratoire d'Informatique de Paris Nord, LIPN) at the University of Paris 13, with Lebbah Mustapha, Duong Tarn, Azzag Hanene and Beck Gaël. Its purpose is to provide an efficient distributed implementation to cluster large multivariate multidimensional data sets (Big Data)  Nearest neighbor mean shift (NNMS) defines clusters in terms of locally density regions in the data density. The main advantages of NNMS are that it can **detect automatically** the number of clusters in the data set and **detect non-ellipsoidal** clusters, in contrast to k-means clustering. Exact nearest neighbors calculations in the standard NNMS prevent from being used on Big Data so we introduce approximate nearest neighbors via Locality Sensitive Hashing (LSH), which are based on random scalar projections of the data. To further improve the scalability, we implement NNMS-LSH in the distributed Spark/Scala ecosystem.
-      
+This algorithm was created during an internship at Computer Science Laboratory (Laboratoire d'Informatique de Paris Nord, LIPN) at the University of Paris 13, with Lebbah Mustapha, Duong Tarn, Azzag Hanene and Beck Gaël. Its purpose is to provide an efficient distributed implementation to cluster large multivariate multidimensional data sets (Big Data)  Nearest neighbor mean shift (NNMS) defines clusters in terms of locally density regions in the data density. The main advantages of NNMS are that it can **detect automatically** the number of clusters in the data set and **detect non-ellipsoidal** clusters, in contrast to k-means clustering. Exact nearest neighbors calculations in the standard NNMS prevent from being used on Big Data so we introduce approximate nearest neighbors via Locality Sensitive Hashing (LSH), which are based on random scalar projections of the data. To further improve the scalability, we implement NNMS-LSH in the distributed Spark/Scala ecosystem.      
 
 ### Parameters
 
 * **k** is the number of neighbours to look at in order to compute centroid.
 * **nbseg**  is the number of segments on which the data vectors are projected during LSH. Its value should usually be larger than 20, depending on the data set.
-* **nbblocs**  is a crucial parameter as larger values give faster but less accurate LSH approximate nearest neighbors, and as smaller values give slower but more accurate approximations.
+* **nbblocs1**  is a crucial parameter as larger values give faster but less accurate LSH approximate nearest neighbors, and as smaller values give slower but more accurate approximations.
+* **nbblocs2**  as larger values give faster but less accurate LSH approximate nearest neighbors, and as smaller values give slower but more accurate approximations.
 * **cmin**  is the threshold under which clusters with fewer than cmin members are merged with the next nearest cluster.
 * **normalisation** is a flag if the data should be first normalized (X-Xmin)/(Xmax-Xmin)  before clustering.
 * **w** is a uniformisation constant for LSH.
 * **npPart** is the default parallelism outside the gradient ascent.
 * **yStarIter** is the maximum number of iterations in the gradient ascent in the mean shift update.
-* **threshold_cluster** is the threshold under which two final mean shift iterates are considered to be in the same cluster.
+* **threshold_cluster1** is the threshold under which two final mean shift iterates are considered to be in the same cluster.
+* **threshold_cluster2** is the threshold under which two final clusters are considered to be the same.
 
 ## Usage
 
@@ -34,13 +35,16 @@ To carry out image analysis, it is recommended to convert the usual color format
   val model = meanShift.train(  sc,
                           parsedData,
                           k=60,
-                          threshold_cluster=0.05,
+                          threshold_cluster1=0.05,
+                          threshold_cluster2=0.05,
                           yStarIter=10,
                           cmin=0,
                           normalisation=true,
                           w=1,
                           nbseg=100,
-                          nbblocs=50,
+                          nbblocs1=50,
+                          nbblocs2=50,
+                          nbLabelIter=1,
                           nbPart=defp)  
                           
   // Save result for an image as (ID, Vector, ClusterNumber)
@@ -57,18 +61,20 @@ To carry out image analysis, it is recommended to convert the usual color format
 #### Image segmentation example
 
 The picture on top left corner is the #117 from Berkeley Segmentation Dataset and Benchmark repository. Others are obtained with :
-* **nbblocs** : 200 (top right) , 500 (bottom left), 1000 (bottom right) 
+* **nbblocs1** : 200 (top right) , 500 (bottom left), 1000 (bottom right) 
+* **nbblocs2** : 1
 * **k** : 50
-* **threshold_cluster** : 0.05
+* **threshold_cluster1** : 0.05
+* **threshold_cluster2** : 0.05 // doesn't matter with nbblocs2 = 1
 * **yStarIter** : 10
+* **nbLabelIter** : 1
 * **w** : 1
 * **cmin** : 200
+
+
 ![alt text][logo]
 
 [logo]: http://img11.hostingpics.net/pics/393309flower.png
-
-## Common problem
-If you set a too low value for threshold_cluster, you will observe a rapid increase of the execution times from minutes to hours and days. This problem is now solved and we've passed on the labeling step from 2500s to 2s for a 0.005 value with **gain** in quality for a 6 slaves cluster. The algorithm is now fully scalable and i will push upgrade in the next month.
 
 ## Maintenance
 Please feel free to report any bugs, recommendations or requests to beck.gael@gmail.com to improve this algorithm.

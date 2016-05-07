@@ -31,13 +31,15 @@ class SetSpec extends specTest {
     var model = ms1.train( sc,
 				  			rdd0,
 				  			k=1,
-				  			threshold_cluster=100,
+				  			threshold_cluster1=100,
+				  			threshold_cluster2=100,
 				  			yStarIter=1,
 				            cmin=0,
 				          	normalisation=true,
 				            w=1,
 				            nbseg=100,
-				            nbblocs=1,
+				            nbblocs1=1,
+				            nbblocs2=1,
 				            nbPart=dp)
 
     model.clustersCenter.foreach(println)
@@ -49,13 +51,15 @@ class SetSpec extends specTest {
     model = ms1.train( sc,
 			  			rdd0,
 			  			k=1,
-			  			threshold_cluster=100,
+			  			threshold_cluster1=100,
+			  			threshold_cluster2=100,
 			  			yStarIter=5,
 			            cmin=0,
 			          	normalisation=true,
 			            w=1,
 			            nbseg=100,
-			            nbblocs=1,
+			            nbblocs1=1,
+			            nbblocs2=1,
 			            nbPart=dp)
 
     model.clustersCenter.foreach(println)
@@ -67,13 +71,15 @@ class SetSpec extends specTest {
     model = ms1.train( sc,
 			  			rdd0,
 			  			k=1,
-			  			threshold_cluster=100,
+			  			threshold_cluster1=100,
+			  			threshold_cluster2=100,
 			  			yStarIter=10,
 			            cmin=0,
 			          	normalisation=true,
 			            w=1,
 			            nbseg=100,
-			            nbblocs=1,
+			            nbblocs1=1,
+			            nbblocs2=1,
 			            nbPart=dp)
 
     model.clustersCenter.foreach(println)
@@ -91,13 +97,15 @@ class SetSpec extends specTest {
     val model = ms1.train( sc,
 			  			rdd0,
 			  			k=1,
-			  			threshold_cluster=0.000001,
+			  			threshold_cluster1=0.000001,
+			  			threshold_cluster2=0.000001,
 			  			yStarIter=1,
 			            cmin=0,
 			          	normalisation=true,
 			            w=1,
 			            nbseg=100,
-			            nbblocs=1,
+			            nbblocs1=1,
+			            nbblocs2=1,
 			            nbPart=dp)
 
     val res = model.predict(vector0)

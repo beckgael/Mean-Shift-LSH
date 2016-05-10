@@ -44,7 +44,7 @@ import java.io._
 /**
  * The class which transform vector to scalar thank's to LSH
  */
-case class LshHash extends Serializable  {      
+class LshHash extends Serializable  {      
   def hashfunc(x:Vector, w:Double, b:Double, tabHash1:Array[Array[Double]]) : Double = {
     var tabHash = Array.empty[Double]
     val x1 = x.toArray
@@ -61,7 +61,7 @@ case class LshHash extends Serializable  {
 /**
  * The class which compute centroïds
  */
-case class Bary0 extends Serializable {
+class Bary0 extends Serializable {
 
   /**
    * Function which compute centroïds
@@ -368,7 +368,7 @@ class MsLsh private (
     val rdd00 = rdd_res.sortBy(_._4)
                       .map(x=>(x._1,x._2,x._3))
                       .coalesce(nbblocs2,shuffle=false)
-    if(nbLabelIter > 1){ rdd0.cache }
+    if(nbLabelIter > 1){ rdd00.cache }
                                           
 
     val fin1 = System.nanoTime

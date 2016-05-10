@@ -345,7 +345,6 @@ class MsLsh private (
                         .repartition(nbblocs1)
     var rdd_res : RDD[(String,Vector,Vector,Double)] = sc.emptyRDD
     data.unpersist()
-    rdd_LSH.cache.foreach(x=>{})
 
     val deb1 = System.nanoTime
    
@@ -360,10 +359,7 @@ class MsLsh private (
       }
       ,true)
       if(ind < yStarIter){
-        val rdd_LSH_unpersist = rdd_LSH
         rdd_LSH = rdd_LSH_ord.map(x => (x._1,x._2,x._3,hasher.value.hashfunc(x._3,ww.value,b.value,tabHash0.value)))
-        rdd_LSH.cache.foreach(x=>{})
-        rdd_LSH_unpersist.unpersist()
       }
       // rdd_res[(Index,NewVect,OrigVect,lshValue)]
       else rdd_res = rdd_LSH_ord.map(x => (x._1,x._3,x._2,hasher.value.hashfunc(x._3,ww.value,b.value,tabHash0.value)))
@@ -372,7 +368,8 @@ class MsLsh private (
     val rdd00 = rdd_res.sortBy(_._4)
                       .map(x=>(x._1,x._2,x._3))
                       .coalesce(nbblocs2,shuffle=false)
-                      .cache
+    if(nbLabelIter > 1){ rdd0.cache }
+                                          
 
     val fin1 = System.nanoTime
     val res1 = (fin1-deb1)/1e9

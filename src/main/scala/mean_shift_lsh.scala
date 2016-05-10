@@ -346,7 +346,7 @@ class MsLsh private (
     var rdd_res : RDD[(String,Vector,Vector,Double)] = sc.emptyRDD
     data.unpersist()
 
-    val deb1 = System.nanoTime
+    //val deb1 = System.nanoTime
    
     for( ind <- 1 to yStarIter  ) {
       val rdd_LSH_ord =  rdd_LSH.sortBy(_._4).mapPartitions( x => {
@@ -370,13 +370,10 @@ class MsLsh private (
                       .coalesce(nbblocs2,shuffle=false)
     if(nbLabelIter > 1){ rdd00.cache }
                                           
-
-    val fin1 = System.nanoTime
-    val res1 = (fin1-deb1)/1e9
-
-    val accum = sc.accumulator(0)
-    val accum2 = sc.accumulator(0)
-
+    //val fin1 = System.nanoTime
+    //val res1 = (fin1-deb1)/1e9
+    //val accum = sc.accumulator(0)
+    //val accum2 = sc.accumulator(0)
 
     def labelizing(rdd1: RDD[(String,Vector,Vector)]) : Mean_shift_lsh_model = {
       
@@ -384,7 +381,7 @@ class MsLsh private (
         var stop = 1
         var labeledData = ArrayBuffer.empty[(String,(String,Vector,Vector))]
         var bucket = it.toBuffer
-        accum2 += bucket.size
+        //accum2 += bucket.size
         var vector1 = bucket(Random.nextInt(bucket.size))._2
         var ind1 = (ind+1)*10000
         while ( stop != 0 ) {
@@ -394,10 +391,10 @@ class MsLsh private (
             // We keep Y* whose distance is greather than threshold
             bucket --= rdd_Clust_i_ind
             stop = bucket.size.toInt
-            accum2 += bucket.size
+            //accum2 += bucket.size
             if(stop != 0) { vector1 = bucket(Random.nextInt(bucket.size))._2 }
             ind1 += 1
-            accum += 1
+            //accum += 1
         }
         labeledData.toIterator
       })
@@ -519,7 +516,7 @@ class MsLsh private (
 
   var models = ArrayBuffer.empty[Mean_shift_lsh_model]
 
-  val deb2 = System.nanoTime
+  //val deb2 = System.nanoTime
 
   for( ind00 <- 0 until nbLabelIter) {
     models += labelizing(rdd00)    
@@ -531,6 +528,8 @@ class MsLsh private (
       centroider.destroy()
     }
   }
+
+  /**   Monitoring part
 
   val params = "size : " + size.toString + "\n" +
            "k: " + k.toString + "\n" +
@@ -556,6 +555,8 @@ class MsLsh private (
   bw.write(stats1 + "\n")
   bw.close()
   
+  */
+
   rdd00.unpersist()
   models
   } 

@@ -41,38 +41,6 @@ import java.io._
  * It can also be apply in order to analyse image, to use this features it is recommanded to convert image from RGB space to L*u*v* space
  */
 
-/**
- * The class which transform vector to scalar thank's to LSH
- */
-class LshHash extends Serializable  {      
-  def hashfunc(x:Vector, w:Double, b:Double, tabHash1:Array[Array[Double]]) : Double = {
-    var tabHash = Array.empty[Double]
-    val x1 = x.toArray
-    for( ind <- tabHash1.indices) {
-      var sum = 0.0
-      for( ind2 <- x1.indices) {
-        sum = sum + (x1(ind2)*tabHash1(ind)(ind2))
-        }     
-      tabHash =  tabHash :+ (sum+b)/w
-    }
-    tabHash.reduce(_+_)
-  }
-}
-/**
- * The class which compute centroïds
- */
-class Bary0 extends Serializable {
-
-  /**
-   * Function which compute centroïds
-   */
-  def bary(tab1:Array[(Vector,Double)],k:Int) : Vector = {
-    var tab2 = tab1.map(_._1.toArray)
-    var bary1 = tab2.reduce(_+_)
-    bary1 = bary1.map(_/k)
-    Vectors.dense(bary1)
-  }
-}
 
 /**
  * The major class where MS-LSH algorithm and prediction fonction are implemented
@@ -244,6 +212,29 @@ class MsLsh private (
     }
   tabHash0
   }
+
+  def hashfunc(x:Vector, w:Double, b:Double, tabHash1:Array[Array[Double]]) : Double = {
+    var tabHash = Array.empty[Double]
+    val x1 = x.toArray
+    for( ind <- tabHash1.indices) {
+      var sum = 0.0
+      for( ind2 <- x1.indices) {
+        sum = sum + (x1(ind2)*tabHash1(ind)(ind2))
+        }     
+      tabHash =  tabHash :+ (sum+b)/w
+    }
+    tabHash.reduce(_+_)
+  }
+
+  /**
+   * Function which compute centroïds
+   */
+  def bary(tab1:Array[(Vector,Double)],k:Int) : Vector = {
+    var tab2 = tab1.map(_._1.toArray)
+    var bary1 = tab2.reduce(_+_)
+    bary1 = bary1.map(_/k)
+    Vectors.dense(bary1)
+  }
   
   /**
    * Scale data to they fit on range [0,1]
@@ -332,21 +323,14 @@ class MsLsh private (
     /**
     * Gradient ascent/Research of Y* 
     */
-    val hasher0 = new LshHash
-    val centroider0 = new Bary0
-
     val ww = sc.broadcast(w)
     val b = sc.broadcast(Random.nextDouble * w )
     val tabHash0 = sc.broadcast(tabHash(nbseg,dim))
-    val hasher = sc.broadcast(hasher0)
-    val centroider = sc.broadcast(centroider0)
   
-    var rdd_LSH = data0.map(x => (x._1,x._2,x._2,hasher.value.hashfunc(x._2,ww.value,b.value,tabHash0.value)))
+    var rdd_LSH = data0.map(x => (x._1, x._2, x._2, hashfunc(x._2,ww.value,b.value,tabHash0.value)))
                         .repartition(nbblocs1)
     var rdd_res : RDD[(String,Vector,Vector,Double)] = sc.emptyRDD
     data.unpersist()
-
-    //val deb1 = System.nanoTime
    
     for( ind <- 1 to yStarIter  ) {
       val rdd_LSH_ord =  rdd_LSH.sortBy(_._4).mapPartitions( x => {
@@ -354,15 +338,15 @@ class MsLsh private (
         bucket.map(y => {
           val array2 = bucket.map( w => (w._2,Vectors.sqdist(y._3,w._2)))
           quickSort(array2)(Ordering[(Double)].on(_._2))
-          (y._1,y._2,centroider.value.bary(array2.take(k),k))
+          (y._1, y._2, bary(array2.take(k),k))
         }).iterator
       }
       ,true)
       if(ind < yStarIter){
-        rdd_LSH = rdd_LSH_ord.map(x => (x._1,x._2,x._3,hasher.value.hashfunc(x._3,ww.value,b.value,tabHash0.value)))
+        rdd_LSH = rdd_LSH_ord.map(x => (x._1, x._2, x._3, hashfunc(x._3,ww.value,b.value,tabHash0.value)))
       }
       // rdd_res[(Index,NewVect,OrigVect,lshValue)]
-      else rdd_res = rdd_LSH_ord.map(x => (x._1,x._3,x._2,hasher.value.hashfunc(x._3,ww.value,b.value,tabHash0.value)))
+      else rdd_res = rdd_LSH_ord.map(x => (x._1, x._3, x._2, hashfunc(x._3,ww.value,b.value,tabHash0.value)))
     }
 
     val rdd00 = rdd_res.sortBy(_._4)
@@ -524,8 +508,6 @@ class MsLsh private (
       ww.destroy()
       b.destroy()
       tabHash0.destroy()
-      hasher.destroy()
-      centroider.destroy()
     }
   }
 

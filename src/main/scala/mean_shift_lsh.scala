@@ -349,7 +349,8 @@ class MsLsh private (
       else rdd_res = rdd_LSH_ord.map(x => (x._1, x._3, x._2, hashfunc(x._3,ww.value,b.value,tabHash0.value)))
     }
 
-    val rdd00 = rdd_res.sortBy(_._4)
+    val rdd00 = if(nbblocs2==1) rdd_res.map(x=>(x._1,x._2,x._3))
+                else rdd_res.sortBy(_._4)
                       .map(x=>(x._1,x._2,x._3))
                       .coalesce(nbblocs2,shuffle=false)
     if(nbLabelIter > 1){ rdd00.cache }
@@ -366,6 +367,9 @@ class MsLsh private (
         var labeledData = ArrayBuffer.empty[(String,(String,Vector,Vector))]
         var bucket = it.toBuffer
         //accum2 += bucket.size
+        println(bucket.size)
+        println(bucket.size)
+        println(bucket.size)
         var vector1 = bucket(Random.nextInt(bucket.size))._2
         var ind1 = (ind+1)*10000
         while ( stop != 0 ) {

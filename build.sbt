@@ -1,10 +1,10 @@
-name := "Neirest Neighbours Mean Shift LSH"
+name := "pute"
 
 version := "1.0.0"
 
 scalaVersion := "2.10.5"
 
-val sparkVersion = "2.0.2"
+val sparkVersion = "1.6.2"
 
 libraryDependencies ++= Seq(
 	"org.apache.spark" %% "spark-core" % sparkVersion % "provided",

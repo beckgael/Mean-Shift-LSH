@@ -293,17 +293,17 @@ class MsLsh private (
         val closestCentroid = sortedClosestCentroid(cpt3)
         val closestClusterID = closestCentroid._3
         val closestClusterSize = closestCentroid._4
-        val tab00 = centroidArray3.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == closestClusterID}
-        val tab01 = centroidArray3.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == currentClusterID}
+        val closestClusters = centroidArray3.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == closestClusterID}
+        val littleClusterWithSameCurrentLabel = centroidArray3.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == currentClusterID}
         var idOfTreatedCluster = ArrayBuffer.empty[String]
         // Update
-        for( ind8 <- tab00.indices) {
-        idOfTreatedCluster += tab00(ind8)._2         
-        centroidArray3.update(tab00(ind8)._1, (tab00(ind8)._1, closestClusterID, tab00(ind8)._3, closestClusterSize + sizecurrent, tab00(ind8)._5))
+        for( ind8 <- closestClusters.indices) {
+        idOfTreatedCluster += closestClusters(ind8)._2         
+        centroidArray3.update(closestClusters(ind8)._1, (closestClusters(ind8)._1, closestClusterID, closestClusters(ind8)._3, closestClusterSize + sizecurrent, closestClusters(ind8)._5))
         }
-        for( ind8 <- tab01.indices) {
-        idOfTreatedCluster += tab01(ind8)._2         
-        centroidArray3.update(tab01(ind8)._1, (tab01(ind8)._1, closestClusterID, tab01(ind8)._3, closestClusterSize + sizecurrent, tab01(ind8)._5))
+        for( ind8 <- littleClusterWithSameCurrentLabel.indices) {
+        idOfTreatedCluster += littleClusterWithSameCurrentLabel(ind8)._2         
+        centroidArray3.update(littleClusterWithSameCurrentLabel(ind8)._1, (littleClusterWithSameCurrentLabel(ind8)._1, closestClusterID, littleClusterWithSameCurrentLabel(ind8)._3, closestClusterSize + sizecurrent, littleClusterWithSameCurrentLabel(ind8)._5))
         }
         if( sizecurrent + closestClusterSize >= cmin ){ indexOfSmallerClusters --= idOfTreatedCluster }
       }

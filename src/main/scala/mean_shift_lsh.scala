@@ -298,11 +298,11 @@ class MsLsh private (
         var idOfTreatedCluster = ArrayBuffer.empty[String]
         // Update
         for( ind8 <- tab00.indices) {
-        idOfTreatedCluster = idOfTreatedCluster :+ tab00(ind8)._2         
+        idOfTreatedCluster += tab00(ind8)._2         
         centroidArray3.update(tab00(ind8)._1, (tab00(ind8)._1, closestClusterID, tab00(ind8)._3, closestClusterSize + sizecurrent, tab00(ind8)._5))
         }
         for( ind8 <- tab01.indices) {
-        idOfTreatedCluster = idOfTreatedCluster :+ tab01(ind8)._2         
+        idOfTreatedCluster += tab01(ind8)._2         
         centroidArray3.update(tab01(ind8)._1, (tab01(ind8)._1, closestClusterID, tab01(ind8)._3, closestClusterSize + sizecurrent, tab01(ind8)._5))
         }
         if( sizecurrent + closestClusterSize >= cmin ){ indexOfSmallerClusters --= idOfTreatedCluster }

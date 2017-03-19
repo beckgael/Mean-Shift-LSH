@@ -14,10 +14,9 @@ object Main {
 
 	val data = sc.textFile("/pathToMyData/"+args(10)).map(_.split(",").map(_.toDouble))
 					.zipWithIndex
-					.map{case(data,idx) => (idx.toString,Vectors.dense(data))}.cache
+					.map{ case(data,idx) => (idx.toString, Vectors.dense(data))}.cache
 
-	val model = meanShift.train(
-							sc,
+	val model = meanShift.train(sc,
 	                          data,
 	                          k=args(0).toInt,
 	                          threshold_cluster1=args(1).toDouble,

@@ -1,4 +1,4 @@
-name := "pute"
+name := "Mean Shift LSH"
 
 version := "1.0.0"
 
@@ -8,7 +8,7 @@ val sparkVersion = "1.6.2"
 
 libraryDependencies ++= Seq(
 	"org.apache.spark" %% "spark-core" % sparkVersion % "provided",
-	"org.apache.spark"  %% "spark-mllib"  % sparkVersion,
+	"org.apache.spark"  %% "spark-mllib"  % sparkVersion % "provided",
 	"org.scalatest" % "scalatest_2.10" % "2.2.4" % "test"
 )
 

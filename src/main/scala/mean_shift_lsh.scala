@@ -276,43 +276,43 @@ class MsLsh private (
     */
     var tab_inf_cmin = numElemByCluster2.filter( _._2 <= cmin)
     var stop_size = tab_inf_cmin.size
-    var tab_ind_petit = tab_inf_cmin.map(_._1).toBuffer
+    var indexOfSmallerClusters = tab_inf_cmin.map(_._1).toBuffer
     val map_ind_all = numElemByCluster2.toMap
-    val tabbar01 = centroidArray2.zipWithIndex.map{ case((clusterID, vector), idx) => (idx, clusterID, vector, map_ind_all(clusterID), clusterID)}.toBuffer
+    val centroidArray3 = centroidArray2.zipWithIndex.map{ case((clusterID, vector), idx) => (idx, clusterID, vector, map_ind_all(clusterID), clusterID)}.toBuffer
   
-    while(tab_ind_petit.size != 0) {
-      for (cpt2 <- tabbar01.indices) {
-      if(tabbar01(cpt2)._4 < cmin){
-        val currentClusterID = tabbar01(cpt2)._2
-        val vector2 = tabbar01(cpt2)._3
-        val sizecurrent = tabbar01(cpt2)._4
-        var tabproche0 = tabbar01.map{ case(idx, newClusterID, vector, cardinality, originalClusterID) =>(Vectors.sqdist(vector, vector2), idx, newClusterID, cardinality)}.toArray
-        quickSort(tabproche0)(Ordering[(Double)].on(_._1))
+    while(indexOfSmallerClusters.size != 0) {
+      for (cpt2 <- centroidArray3.indices) {
+      if(centroidArray3(cpt2)._4 < cmin){
+        val currentClusterID = centroidArray3(cpt2)._2
+        val vector2 = centroidArray3(cpt2)._3
+        val sizecurrent = centroidArray3(cpt2)._4
+        var sortedClosestCentroid = centroidArray3.map{ case(idx, newClusterID, vector, cardinality, originalClusterID) =>(Vectors.sqdist(vector, vector2), idx, newClusterID, cardinality)}.toArray
+        quickSort(sortedClosestCentroid)(Ordering[(Double)].on(_._1))
         var cpt3 = 1
-        while (tabproche0(cpt3)._3 == currentClusterID) {cpt3 += 1}
-        val plusproche = tabproche0(cpt3)
-        val closestClusterID = plusproche._3
-        val closestClusterSize = plusproche._4
-        val tab00 = tabbar01.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == closestClusterID}
-        val tab01 = tabbar01.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == currentClusterID}
-        var tabind0 = ArrayBuffer.empty[String]
+        while (sortedClosestCentroid(cpt3)._3 == currentClusterID) {cpt3 += 1}
+        val closestCentroid = sortedClosestCentroid(cpt3)
+        val closestClusterID = closestCentroid._3
+        val closestClusterSize = closestCentroid._4
+        val tab00 = centroidArray3.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == closestClusterID}
+        val tab01 = centroidArray3.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == currentClusterID}
+        var idOfTreatedCluster = ArrayBuffer.empty[String]
         // Update
         for( ind8 <- tab00.indices) {
-        tabind0 = tabind0 :+ tab00(ind8)._2         
-        tabbar01.update(tab00(ind8)._1, (tab00(ind8)._1, closestClusterID, tab00(ind8)._3, closestClusterSize + sizecurrent, tab00(ind8)._5))
+        idOfTreatedCluster = idOfTreatedCluster :+ tab00(ind8)._2         
+        centroidArray3.update(tab00(ind8)._1, (tab00(ind8)._1, closestClusterID, tab00(ind8)._3, closestClusterSize + sizecurrent, tab00(ind8)._5))
         }
         for( ind8 <- tab01.indices) {
-        tabind0 = tabind0 :+ tab01(ind8)._2         
-        tabbar01.update(tab01(ind8)._1, (tab01(ind8)._1, closestClusterID, tab01(ind8)._3, closestClusterSize + sizecurrent, tab01(ind8)._5))
+        idOfTreatedCluster = idOfTreatedCluster :+ tab01(ind8)._2         
+        centroidArray3.update(tab01(ind8)._1, (tab01(ind8)._1, closestClusterID, tab01(ind8)._3, closestClusterSize + sizecurrent, tab01(ind8)._5))
         }
-        if(sizecurrent+closestClusterSize >= cmin){ tab_ind_petit --= tabind0 }
+        if( sizecurrent + closestClusterSize >= cmin ){ indexOfSmallerClusters --= idOfTreatedCluster }
       }
-      else { tab_ind_petit -= tabbar01(cpt2)._1.toString }
+      else { indexOfSmallerClusters -= centroidArray3(cpt2)._1.toString }
       }       
     }
 
 
-    val tabbar000 = sc.broadcast(tabbar01.toArray)
+    val tabbar000 = sc.broadcast(centroidArray3.toArray)
     val oldToNewLabelMapb = sc.broadcast(oldToNewLabelMap)
 
     val rdd_Ystar_labeled2 = rdd_Ystar_labeled.map( x => (oldToNewLabelMapb.value(x._1),x._2))

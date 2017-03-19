@@ -1,4 +1,4 @@
-name := "pute"
+name := "Mean Shift LSH"
 
 version := "1.0.0"
 

@@ -35,6 +35,7 @@ import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark
 import java.io._
+import scala.math.{min, max}
 
 object Fcts extends Serializable {
 
@@ -86,18 +87,15 @@ object Fcts extends Serializable {
    * Theses array are used in order to descale RDD
    */
   def scaleRdd(rdd1:RDD[(String,Vector)]) : (RDD[(String,Vector)],Array[Double],Array[Double]) = {
+    rdd1.cache
     val vecttest = rdd1.first()._2
     val size1 = vecttest.size
-    var minArray : Array[Double] = Array()
-    var maxArray : Array[Double] = Array()
-    for( ind0 <- 0 until size1) {
-      var vectmin = rdd1.takeOrdered(1)(Ordering[(Double)].on(x => x._2(ind0)))
-      var vectmax = rdd1.top(1)(Ordering[(Double)].on(x => x._2(ind0)))
-      val min0 = vectmin(0)._2(ind0)
-      val max0 = vectmax(0)._2(ind0)
-      minArray = minArray :+ min0
-      maxArray = maxArray :+ max0
-    }
+
+    val minMaxArray = rdd1.map{ case(idx, vector) => vector.toArray.map(value => (value, value))}.reduce( (v1, v2) => v1.zip(v2).map{case(((min1,max1),(min2,max2))) => (min(min1, min2), max(max1, max2))})
+
+    val minArray = minMaxArray.map{ case((min, max)) => min}
+    val maxArray = minMaxArray.map{ case((min, max)) => max}
+
     val rdd2 = rdd1.map( x => {
       var tabcoord : Array[Double] = Array()
       for( ind0 <- 0 until size1) {

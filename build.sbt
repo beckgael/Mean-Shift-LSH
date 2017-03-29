@@ -1,10 +1,16 @@
-name := "Mean Shift LSH"
+name := "Neirest-Neighbours-Mean-Shift-LSH"
 
-version := "1.0.0"
+version := "1.0.5"
+
+organizatoin := "spartakus"
+
+bintrayOrganization := Some("spartakus")
 
 scalaVersion := "2.10.5"
 
 val sparkVersion = "1.6.2"
+
+resolvers += Resolver.bintrayRepo("otherUser", "maven")
 
 libraryDependencies ++= Seq(
 	"org.apache.spark" %% "spark-core" % sparkVersion % "provided",
@@ -17,3 +23,9 @@ licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html
 credentials += Credentials(Path.userHome / ".bintray" / ".credentials")
 
 resolvers += Resolver.jcenterRepo
+
+publishMavenStyle := false
+
+bintrayRepository := "neirest-neighbours-mean-shift-lsh"
+
+//bintrayOrganization in bintray := None

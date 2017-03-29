@@ -206,7 +206,6 @@ class MsLsh private (
       var stop = 1
       var labeledData = ArrayBuffer.empty[(String,(String,Vector,Vector))]
       var bucket = it.toBuffer
-      //println(bucket.size)
       var mod1 = bucket(Random.nextInt(bucket.size))._2
       var ind1 = (ind+1)*10000
       while ( stop != 0 ) {
@@ -225,8 +224,7 @@ class MsLsh private (
     /**
     * Gives Y* labels to original data
     */
-    val rdd_Ystar_labeled = clusterByLshBucket.map{ case(clusterID, (idx, mod, originalVector)) => (clusterID, (idx, originalVector, mod))}
-                                .partitionBy(new spark.HashPartitioner(numPart)).cache
+    val rdd_Ystar_labeled = clusterByLshBucket.map{ case(clusterID, (idx, mod, originalVector)) => (clusterID, (idx, originalVector, mod))}.partitionBy(new spark.HashPartitioner(numPart)).cache
     
     val numElemByCLust = rdd_Ystar_labeled.countByKey.toArray
     quickSort(numElemByCLust)(Ordering[(Int)].on(_._1.toInt))
@@ -251,7 +249,7 @@ class MsLsh private (
     var stop2 = 1
     var randomCentroidVector = centroidArray1(Random.nextInt(centroidArray1.size))._2
     var newIndex = 0
-    var centroidArray2 = ArrayBuffer.empty[(String,Vector)]
+    val centroidArray2 = ArrayBuffer.empty[(String,Vector)]
     val numElemByCluster2 = ArrayBuffer.empty[(String,Int)]
     val oldToNewLabelMap = scala.collection.mutable.Map.empty[String,String]
     while (stop2 != 0) {
@@ -274,9 +272,9 @@ class MsLsh private (
     /**
     * Fusion of cluster which cardinality is smaller than cmin 
     */
-    var tab_inf_cmin = numElemByCluster2.filter( _._2 <= cmin)
-    var stop_size = tab_inf_cmin.size
-    var indexOfSmallerClusters = tab_inf_cmin.map(_._1).toBuffer
+    val tab_inf_cmin = numElemByCluster2.filter( _._2 <= cmin)
+    val stop_size = tab_inf_cmin.size
+    val indexOfSmallerClusters = tab_inf_cmin.map(_._1).toBuffer
     val map_ind_all = numElemByCluster2.toMap
     val centroidArray3 = centroidArray2.zipWithIndex.map{ case((clusterID, vector), idx) => (idx, clusterID, vector, map_ind_all(clusterID), clusterID)}.toBuffer
   
@@ -392,12 +390,10 @@ class MsLsh private (
     val readyToLabelization = if(nbblocs2==1) rdd_res.map{ case(idx, mod, originalVector, hashV) => (idx, mod, originalVector)}
                 else rdd_res.sortBy(_._4)
                       .map{ case(idx, mod, originalVector, hashV) => (idx, mod, originalVector)}
-                      .coalesce(nbblocs2,shuffle=false)
+                      .coalesce(nbblocs2, shuffle=false)
     if(nbLabelIter > 1){ readyToLabelization.cache }
 
   val models = ArrayBuffer.empty[Mean_shift_lsh_model]
-
-  //val deb2 = System.nanoTime
 
   for( ind00 <- 0 until nbLabelIter) {
     models += labelizing(sc, readyToLabelization, maxMinArray)    
@@ -467,7 +463,7 @@ object MsLsh {
   /**
    * Restore RDD original value
    */
-  def descaleRDD(rdd1:RDD[(String,(String,Vector))],maxMinArray0:Array[Array[Double]]) : RDD[(String,String,Vector)] = {
+  def descaleRDD(rdd1:RDD[(String,(String,Vector))], maxMinArray0:Array[Array[Double]]) : RDD[(String,String,Vector)] = {
     val vecttest = rdd1.first()._2._2
     val size1 = vecttest.size
     val maxArray = maxMinArray0(0)
@@ -489,7 +485,7 @@ object MsLsh {
    */
   def imageAnalysis(msmodel:Mean_shift_lsh_model) : RDD[(Int,Vector,String)] = {
     val rddf = descaleRDD(msmodel.rdd,msmodel.maxMinArray)
-    val rdd_final = rddf.map(x=>(x._2.toInt,msmodel.clustersCenter(x._1),x._1)) 
+    val rdd_final = rddf.map( x => (x._2.toInt,msmodel.clustersCenter(x._1),x._1)) 
     rdd_final
   }
 
@@ -497,7 +493,7 @@ object MsLsh {
    * Save result for an image analysis
    * Results look's like RDD[ID,Centroïd_Vector,cluster_Number]
    */
-  def saveImageAnalysis(msmodel:Mean_shift_lsh_model, folder:String,numpart:Int=1) : Unit = {
+  def saveImageAnalysis(msmodel:Mean_shift_lsh_model, folder:String, numpart:Int=1) : Unit = {
     val rdd_final = descaleRDD(msmodel.rdd,msmodel.maxMinArray).map(x=>(x._2.toInt,msmodel.clustersCenter(x._1),x._1))
     rdd_final.coalesce(numpart,true).sortBy(_._1).saveAsTextFile(folder)  
   }
@@ -506,7 +502,7 @@ object MsLsh {
    * Get an RDD[ID,cluster_Number]
    */
   def getlabeling(msmodel:Mean_shift_lsh_model) : RDD[(String,String)] = {
-    val rddf = msmodel.rdd.map(x=>(x._2._1,x._1))
+    val rddf = msmodel.rdd.map( x => (x._2._1,x._1))
     rddf
   }
 
@@ -514,7 +510,7 @@ object MsLsh {
    * Save labeling as (ID,cluster_Number)
    */
   def savelabeling(msmodel:Mean_shift_lsh_model,folder:String,numpart:Int=1) : Unit = {
-    msmodel.rdd.map(x=>(x._2._1.toInt,x._1)).sortBy(_._1,true,numpart).saveAsTextFile(folder)
+    msmodel.rdd.map( x => (x._2._1.toInt,x._1)).sortBy(_._1,true,numpart).saveAsTextFile(folder)
   }
 
   /**
@@ -523,7 +519,7 @@ object MsLsh {
   def saveClusterInfo(sc1:SparkContext, msmodel:Mean_shift_lsh_model,folder:String) : Unit = {
     val array1 = msmodel.clustersCenter.toArray
     val cardClust = msmodel.rdd.countByKey 
-    val rdd1 = sc1.parallelize(array1,1).map(x=>(x._1,cardClust(x._1),x._2))
+    val rdd1 = sc1.parallelize(array1,1).map( x => (x._1,cardClust(x._1),x._2))
     rdd1.sortBy(_._1.toInt).saveAsTextFile(folder)
   }
 
@@ -531,7 +527,7 @@ object MsLsh {
    * Prediction function which tell in which cluster a vector should belongs to
    */
   def prediction(v:Vector,mapCentroid:Map[String,Vector]) : String = {
-    val distC = mapCentroid.map(x=>(x._1,Vectors.sqdist(v,x._2)))
+    val distC = mapCentroid.map( x => (x._1,Vectors.sqdist(v,x._2)))
     val tabC = distC.toArray
     quickSort(tabC)(Ordering[Double].on(_._2))
     tabC(0)._1

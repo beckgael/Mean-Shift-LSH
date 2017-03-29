@@ -61,7 +61,7 @@ object Fcts extends Serializable {
     for( ind <- tabHash1.indices) {
       var sum = 0.0
       for( ind2 <- x1.indices) {
-        sum = sum + (x1(ind2)*tabHash1(ind)(ind2))
+        sum = sum + ( x1(ind2) * tabHash1(ind)(ind2) )
         }     
       tabHash =  tabHash :+ (sum+b)/w
     }
@@ -91,7 +91,7 @@ object Fcts extends Serializable {
     val vecttest = rdd1.first()._2
     val size1 = vecttest.size
 
-    val minMaxArray = rdd1.map{ case(idx, vector) => vector.toArray.map(value => (value, value))}.reduce( (v1, v2) => v1.zip(v2).map{case(((min1,max1),(min2,max2))) => (min(min1, min2), max(max1, max2))})
+    val minMaxArray = rdd1.map{ case(idx, vector) => vector.toArray.map(value => (value, value))}.reduce( (v1, v2) => v1.zip(v2).map{ case(((min1,max1),(min2,max2))) => (min(min1, min2), max(max1, max2))})
 
     val minArray = minMaxArray.map{ case((min, max)) => min}
     val maxArray = minMaxArray.map{ case((min, max)) => max}

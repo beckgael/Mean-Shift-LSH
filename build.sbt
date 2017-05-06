@@ -2,7 +2,7 @@ name := "Neirest-Neighbours-Mean-Shift-LSH"
 
 version := "1.0.5"
 
-organizatoin := "spartakus"
+organization := "spartakus"
 
 bintrayOrganization := Some("spartakus")
 

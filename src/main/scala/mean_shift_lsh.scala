@@ -326,10 +326,10 @@ class MsLsh private (
     val centroidF = rddf.map( x => (x._1,(x._2._2.toArray))).reduceByKey(_+_)
                         .map( x => (x._1,Vectors.dense(x._2.map(_/k0(x._1)))))
     
-    val centroidMap = Fcts.descaleRDDcentroid(centroidF,maxMinArray).collect.toMap
+    val centroidMap = if( normalisation ) Fcts.descaleRDDcentroid(centroidF,maxMinArray).collect.toMap else centroidF.collect.toMap
 
     rdd_Ystar_labeled.unpersist()
-    val msmodel = new Mean_shift_lsh_model(centroidMap,rddf,maxMinArray)
+    val msmodel = new Mean_shift_lsh_model(centroidMap, rddf, maxMinArray)
     //rddf.unpersist()
     msmodel
     

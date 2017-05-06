@@ -115,14 +115,14 @@ object Fcts extends Serializable {
     val size1 = vecttest.size
     val maxArray = maxMinArray0(0)
     val minArray = maxMinArray0(1)
-    val rdd2 = rdd1.map( x => {
+    val rdd2 = rdd1.map{ case(label, vector) => {
       var tabcoord : Array[Double] = Array()
       for( ind0 <- 0 until size1) {
-        val coordXi = x._2(ind0)*(maxArray(ind0)-minArray(ind0))+minArray(ind0)
+        val coordXi = vector(ind0)*(maxArray(ind0)-minArray(ind0))+minArray(ind0)
         tabcoord = tabcoord :+ coordXi
       }
-      (x._1,Vectors.dense(tabcoord))         
-    })
+      (label, Vectors.dense(tabcoord))         
+    }}
     rdd2
   }	
 

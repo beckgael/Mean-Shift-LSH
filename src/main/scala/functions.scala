@@ -43,24 +43,24 @@ object Fcts extends Serializable {
    * Create a tab with random vector where component are taken on normal law N(0,1) for LSH
    */
   def tabHash(nb:Int, dim:Int) = {
-    val tabHash0 = ListBuffer.empty[Array[Double]]
+    val tabHash0 = new Array[Array[Double]](nb)
     for( ind <- 0 until nb) {
-      val vechash1 = ListBuffer.empty[Double]
-      for( ind <- 0 until dim) vechash1 += Random.nextGaussian
-      tabHash0 += vechash1.toArray
+      val vechash1 = new Array[Double](dim)
+      for( ind2 <- 0 until dim) vechash1(ind2) = Random.nextGaussian
+      tabHash0(ind) = vechash1.toArray
     }
-  tabHash0.toArray
+  tabHash0
   }
 
   def hashfunc(x:Vector, w:Double, b:Double, tabHash1:Array[Array[Double]]) : Double = {
-    val tabHash = ListBuffer.empty[Double]
+    val tabHash = new Array[Double](tabHash1.size)
     val x1 = x.toArray
-    for( hashTab <- tabHash1) {
+    for( ind <- tabHash1.indices) {
       var sum = 0.0
-      for( ind <- x1.indices) {
-        sum += ( x1(ind) * hashTab(ind) )
+      for( ind2 <- x1.indices) {
+        sum += ( x1(ind2) * tabHash1(ind)(ind2) )
         }     
-      tabHash += (sum + b) / w
+      tabHash(ind) = (sum + b) / w
     }
     tabHash.reduce(_ + _)
   }

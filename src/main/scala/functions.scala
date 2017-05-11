@@ -24,7 +24,7 @@ package msLsh
 
 import scala.util.Random
 import scala.util.Sorting.quickSort
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import spire.implicits._
 import org.apache.spark.mllib.feature.StandardScaler
 import org.apache.spark.rdd.RDD
@@ -43,39 +43,36 @@ object Fcts extends Serializable {
    * Create a tab with random vector where component are taken on normal law N(0,1) for LSH
    */
   def tabHash(nb:Int, dim:Int) = {
-    var tabHash0 : Array[Array[Double]] = Array()
+    val tabHash0 = ListBuffer.empty[Array[Double]]
     for( ind <- 0 until nb) {
-      var vechash1 : Array[Double] = Array()
-      for( ind <- 0 until dim) {
-        val nG = Random.nextGaussian
-        vechash1 = vechash1 :+ nG
-      }
-      tabHash0 = tabHash0 :+ vechash1
+      val vechash1 = ListBuffer.empty[Double]
+      for( ind <- 0 until dim) vechash1 += Random.nextGaussian
+      tabHash0 += vechash1.toArray
     }
-  tabHash0
+  tabHash0.toArray
   }
 
   def hashfunc(x:Vector, w:Double, b:Double, tabHash1:Array[Array[Double]]) : Double = {
-    var tabHash = Array.empty[Double]
+    val tabHash = ListBuffer.empty[Double]
     val x1 = x.toArray
-    for( ind <- tabHash1.indices) {
+    for( hashTab <- tabHash1) {
       var sum = 0.0
-      for( ind2 <- x1.indices) {
-        sum = sum + ( x1(ind2) * tabHash1(ind)(ind2) )
+      for( ind <- x1.indices) {
+        sum += ( x1(ind) * hashTab(ind) )
         }     
-      tabHash =  tabHash :+ (sum+b)/w
+      tabHash += (sum + b) / w
     }
-    tabHash.reduce(_+_)
+    tabHash.reduce(_ + _)
   }
 
   /**
    * Function which compute centroïds
    */
-  def bary(tab1:Array[(Vector,Double)],k:Int) : Vector = {
-    var tab2 = tab1.map(_._1.toArray)
-    var bary1 = tab2.reduce(_+_)
-    bary1 = bary1.map(_/k)
-    Vectors.dense(bary1)
+  def bary(tab:Array[(Vector, Double)], k:Int) : Vector = {
+    val vectors = tab.map(_._1.toArray)
+    val vectorsReduct = vectors.reduce(_ + _)
+    val centroid = vectorsReduct.map(_/k)
+    Vectors.dense(centroid)
   }
   
   /**

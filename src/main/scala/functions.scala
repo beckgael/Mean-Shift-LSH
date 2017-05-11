@@ -86,7 +86,7 @@ object Fcts extends Serializable {
    *   Third element is the array of min value for each component
    * Theses array are used in order to descale RDD
    */
-  def scaleRdd(rdd1:RDD[(String,Vector)]) : (RDD[(String,Vector)],Array[Double],Array[Double]) = {
+  def scaleRdd(rdd1:RDD[(Long,Vector)]) : (RDD[(Long,Vector)],Array[Double],Array[Double]) = {
     rdd1.cache
     val vecttest = rdd1.first()._2
     val size1 = vecttest.size
@@ -110,7 +110,7 @@ object Fcts extends Serializable {
   /**
    * Restore centroid's original value
    */
-  def descaleRDDcentroid(rdd1:RDD[(String,Vector)],maxMinArray0:Array[Array[Double]]) : RDD[(String,Vector)] = {
+  def descaleRDDcentroid(rdd1:RDD[(Int, Vector)],maxMinArray0:Array[Array[Double]]) : RDD[(Int, Vector)] = {
     val vecttest = rdd1.first()._2
     val size1 = vecttest.size
     val maxArray = maxMinArray0(0)

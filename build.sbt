@@ -8,13 +8,13 @@ bintrayOrganization := Some("spartakus")
 
 scalaVersion := "2.10.5"
 
-val sparkVersion = "1.6.2"
+val sparkVersion = "1.4.1"
 
 resolvers += Resolver.bintrayRepo("otherUser", "maven")
 
 libraryDependencies ++= Seq(
-	"org.apache.spark" %% "spark-core" % sparkVersion % "provided",
-	"org.apache.spark"  %% "spark-mllib"  % sparkVersion % "provided",
+	"org.apache.spark" %% "spark-core" % sparkVersion,
+	"org.apache.spark"  %% "spark-mllib"  % sparkVersion,
 	"org.scalatest" % "scalatest_2.10" % "2.2.4" % "test"
 )
 

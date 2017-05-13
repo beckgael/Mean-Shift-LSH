@@ -29,7 +29,7 @@ import spire.implicits._
 import org.apache.spark.mllib.feature.StandardScaler
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext
-import org.apache.spark.mllib.rdd.MLPairRDDFunctions._
+//import org.apache.spark.mllib.rdd.MLPairRDDFunctions._
 import org.apache.spark.mllib.util._
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.storage.StorageLevel

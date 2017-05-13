@@ -29,7 +29,6 @@ import spire.implicits._
 import org.apache.spark.mllib.feature.StandardScaler
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext
-//import org.apache.spark.mllib.rdd.MLPairRDDFunctions._
 import org.apache.spark.mllib.util._
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.storage.StorageLevel
@@ -47,18 +46,17 @@ object Fcts extends Serializable {
     for( ind <- 0 until nb) {
       val vechash1 = new Array[Double](dim)
       for( ind2 <- 0 until dim) vechash1(ind2) = Random.nextGaussian
-      tabHash0(ind) = vechash1.toArray
+      tabHash0(ind) = vechash1
     }
   tabHash0
   }
 
   def hashfunc(x:Vector, w:Double, b:Double, tabHash1:Array[Array[Double]]) : Double = {
     val tabHash = new Array[Double](tabHash1.size)
-    val x1 = x.toArray
     for( ind <- tabHash1.indices) {
       var sum = 0.0
-      for( ind2 <- x1.indices) {
-        sum += ( x1(ind2) * tabHash1(ind)(ind2) )
+      for( ind2 <- 0 until x.size ) {
+        sum += ( x(ind2) * tabHash1(ind)(ind2) )
         }     
       tabHash(ind) = (sum + b) / w
     }
@@ -68,7 +66,7 @@ object Fcts extends Serializable {
   /**
    * Function which compute centroïds
    */
-  def bary(tab:Array[(Vector, Double)], k:Int) : Vector = {
+  def computeCentroid(tab:Array[(Vector, Double)], k:Int) : Vector = {
     val vectors = tab.map(_._1.toArray)
     val vectorsReduct = vectors.reduce(_ + _)
     val centroid = vectorsReduct.map(_/k)

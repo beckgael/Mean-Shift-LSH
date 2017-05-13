@@ -29,7 +29,6 @@ import spire.implicits._
 import org.apache.spark.mllib.feature.StandardScaler
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext
-//import org.apache.spark.mllib.rdd.MLPairRDDFunctions._
 import org.apache.spark.mllib.util._
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.storage.StorageLevel
@@ -195,7 +194,6 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
     */
     data.cache
     val size =  data.count().toInt
-    var maxMinArray : Array[Array[Double]] = Array()
     val maxK = (size/nbblocs1).toInt -1 
   
     if (size < cmin) { throw new IllegalStateException("Exception : cmin > data size") }
@@ -206,7 +204,7 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
     val (normalizedOrNotRDD, maxArray, minArray) = if (normalisation) Fcts.scaleRdd(data)
                                       else (data, Array.empty[Double], Array.empty[Double])    
     val dim = normalizedOrNotRDD.first._2.size
-    maxMinArray = Array(maxArray, minArray) 
+    val maxMinArray = Array(maxArray, minArray) 
     
     /**
     * Gradient ascent/Research of Y* 
@@ -226,7 +224,7 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
         bucket.map{ case(idx, originalVector, mod, hashV) => {
           val array2 = bucket.map{ case(idx2, originalVector2, mod2, hashV2) => (originalVector2, Vectors.sqdist(mod, originalVector2))}
           quickSort(array2)(Ordering[(Double)].on(_._2))
-          (idx, originalVector, Fcts.bary(array2.take(k),k))
+          (idx, originalVector, Fcts.computeCentroid(array2.take(k), k))
         }}.iterator
       }
       ,true)
@@ -274,9 +272,9 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
     
     val numElemByCLust = rdd_Ystar_labeled.countByKey.toArray.sortBy(_._1)
 
-    var centroidArray = rdd_Ystar_labeled.map{ case(clusterID, (idx, originalVector, mod)) => (clusterID ,originalVector.toArray)}.reduceByKey(_+_).sortBy(_._1).collect
+    val centroidArray = rdd_Ystar_labeled.map{ case(clusterID, (idx, originalVector, mod)) => (clusterID , originalVector.toArray)}.reduceByKey(_ + _).sortBy(_._1).collect
 
-    var centroidArray1 = ArrayBuffer.empty[(Int, Vector, Int)]
+    val centroidArray1 = ArrayBuffer.empty[(Int, Vector, Int)]
 
     // Form the array of clusters centroids
     for( ind <- 0 until numElemByCLust.size) {
@@ -420,7 +418,8 @@ object MsLsh {
   /**
    * Restore RDD original value
    */
-  def descaleRDD(rdd1:RDD[(Int, (Long, Vector))], maxMinArray0:Array[Array[Double]]) : RDD[(Int, Long, Vector)] = {
+  val descaleRDD = (rdd1:RDD[(Int, (Long, Vector))], maxMinArray0:Array[Array[Double]]) => 
+  {
     val vecttest = rdd1.first()._2._2
     val size1 = vecttest.size
     val maxArray = maxMinArray0(0)

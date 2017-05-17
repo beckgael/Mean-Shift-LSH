@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
+ * http://ww.apache.org/licenses/LICENSE-2.0
  * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,15 +24,14 @@ package msLsh
 
 import scala.util.Random
 import scala.util.Sorting.quickSort
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer, HashMap}
 import spire.implicits._
-import org.apache.spark.mllib.feature.StandardScaler
 import org.apache.spark.rdd.RDD
-import org.apache.spark.SparkContext
+import org.apache.spark.{SparkContext, HashPartitioner}
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.mllib.util._
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
-import org.apache.spark.storage.StorageLevel
-import org.apache.spark.HashPartitioner
+import org.apache.spark.mllib.feature.StandardScaler
 import java.io.FileWriter
 /**
  * Mean-Shift-LSH clustering 
@@ -59,8 +58,8 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
   /**
    * Set w
    */
-  def set_w(ww:Int) : this.type = {
-    this.w = ww
+  def set_w(newW:Int) : this.type = {
+    this.w = newW
     this
   }
   
@@ -189,46 +188,44 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
     val maxK = (size/nbblocs1).toInt -1 
     val dp = sc.defaultParallelism
 
-    if (size < cmin) { throw new IllegalStateException("Exception : cmin > data size") }
-    if (maxK <= k) { throw new IllegalStateException("Exception : You set a too high K value") }
+    if (size < cmin) throw new IllegalStateException("Exception : cmin > data size")
+    if (maxK <= k) throw new IllegalStateException("Exception : You set a too high K value")
     /**
     * Dataset Normalisation
     */
-    val (normalizedOrNotRDD, maxArray, minArray) = if (normalisation) Fcts.scaleRdd(data)
-                                      else (data, Array.empty[Double], Array.empty[Double])    
+    val (normalizedOrNotRDD, maxArray, minArray) = if(normalisation) Fcts.scaleRdd(data) else (data, Array.empty[Double], Array.empty[Double])    
     val dim = normalizedOrNotRDD.first._2.size
     val maxMinArray = Array(maxArray, minArray) 
     
     /**
     * Gradient ascent/Research of Y* 
     */
-    val ww = sc.broadcast(w)
-    val b = sc.broadcast(Random.nextDouble * w )
+    val b = Random.nextDouble * w
     val tabHash0 = sc.broadcast(Fcts.tabHash(nbseg,dim))
   
-    var rdd_LSH = normalizedOrNotRDD.map{ case(idx, vector) => (idx, vector, vector, Fcts.hashfunc(vector,ww.value,b.value,tabHash0.value))}
+    var rdd_LSH = normalizedOrNotRDD.map{ case(id, vector) => (id, vector, vector, Fcts.hashfunc(vector,w,b,tabHash0.value))}
                         .repartition(nbblocs1)
     var rdd_res : RDD[(Long, Vector, Vector, Double)] = sc.emptyRDD
     data.unpersist(true)
    
-    for( ind <- 1 to yStarIter  ) {
+    for( ind <- 0 until yStarIter  ) {
       val rdd_LSH_ord =  rdd_LSH.sortBy(_._4).mapPartitions( x => {
-        val bucket = x.toArray
-        bucket.map{ case(idx, originalVector, mod, hashV) => {
-          val array2 = bucket.map{ case(idx2, originalVector2, mod2, hashV2) => (originalVector2, Vectors.sqdist(mod, originalVector2))}
-          quickSort(array2)(Ordering[(Double)].on(_._2))
-          (idx, originalVector, Fcts.computeCentroid(array2.take(k), k))
+        val approxKNN = x.toArray
+        approxKNN.map{ case(id, originalVector, mod, hashV) => {
+          val distKNNFromCurrentPoint = approxKNN.map{ case(_, originalVector2, mod2, hashV2) => (originalVector2, Vectors.sqdist(mod, originalVector2))}
+          quickSort(distKNNFromCurrentPoint)(Ordering[(Double)].on(_._2))
+          (id, originalVector, Fcts.computeCentroid(distKNNFromCurrentPoint.take(k), k))
         }}.iterator
       }
       ,true)
       if(ind < yStarIter){
-        rdd_LSH = rdd_LSH_ord.map{ case(id, originalVector, mod) => (id, originalVector, mod, Fcts.hashfunc(mod, ww.value, b.value, tabHash0.value))}
+        rdd_LSH = rdd_LSH_ord.map{ case(id, originalVector, mod) => (id, originalVector, mod, Fcts.hashfunc(mod, w, b, tabHash0.value))}
       }
       // rdd_res[(Index,NewVect,OrigVect,lshValue)]
-      else rdd_res = rdd_LSH_ord.map{ case(id, originalVector, mod) => (id, mod, originalVector, Fcts.hashfunc(mod, ww.value, b.value, tabHash0.value))}
+      else rdd_res = rdd_LSH_ord.map{ case(id, originalVector, mod) => (id, mod, originalVector, Fcts.hashfunc(mod, w, b, tabHash0.value))}
     }
 
-    val readyToLabelization = if(nbblocs2==1) rdd_res.map{ case(idx, mod, originalVector, hashV) => (idx, mod, originalVector)} else rdd_res.sortBy(_._4)                      .map{ case(idx, mod, originalVector, hashV) => (idx, mod, originalVector)}.coalesce(nbblocs2, shuffle=false)
+    val readyToLabelization = if( nbblocs2 == 1 ) rdd_res.map{ case(id, mod, originalVector, hashV) => (id, mod, originalVector)} else rdd_res.sortBy(_._4)                      .map{ case(id, mod, originalVector, hashV) => (id, mod, originalVector)}.coalesce(nbblocs2, shuffle = false)
     if(nbLabelIter > 1){ readyToLabelization.cache }
 
   val models = ArrayBuffer.empty[Mean_shift_lsh_model]
@@ -241,7 +238,7 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
     
     val clusterByLshBucket = readyToLabelization.mapPartitionsWithIndex( (ind,it) => {
       var stop = 1
-      var labeledData = ArrayBuffer.empty[(Int, (Long, Vector, Vector))]
+      var labeledData = ListBuffer.empty[(Int, (Long, Vector, Vector))]
       var bucket = it.toBuffer
       var mod1 = bucket(Random.nextInt(bucket.size))._2
       var clusterID = (ind+1)*10000
@@ -261,35 +258,37 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
     /**
     * Gives Y* labels to original data
     */
-    val rdd_Ystar_labeled = clusterByLshBucket.map{ case(clusterID, (idx, mod, originalVector)) => (clusterID, (idx, originalVector, mod))}.partitionBy(new HashPartitioner(dp)).cache
+    val rdd_Ystar_labeled = clusterByLshBucket.map{ case(clusterID, (idx, mod, originalVector)) => (clusterID, (idx, originalVector, mod)) }
+                                              .partitionBy(new HashPartitioner(dp))
+                                              .cache
     
-    val centroidArray = rdd_Ystar_labeled.map{ case(clusterID, (idx, originalVector, mod)) => (clusterID , originalVector.toArray)}.reduceByKey(_ + _).sortBy(_._1).collect
+    val centroidMapOrig = HashMap(rdd_Ystar_labeled.map{ case(clusterID, (idx, originalVector, mod)) => (clusterID , originalVector.toArray) }
+                                         .reduceByKey(_ + _)
+                                         .sortBy(_._1)
+                                         .collect:_*)
+
 
     val numElemByCLust = rdd_Ystar_labeled.countByKey.toArray.sortBy(_._1)
 
 
-    val centroidArray1 = ArrayBuffer.empty[(Int, Vector, Int)]
+    val centroids = ArrayBuffer.empty[(Int, Vector, Int)]
 
     // Form the array of clusters centroids
-    for( ind <- 0 until numElemByCLust.size) {
-      centroidArray1 += (( numElemByCLust(ind)._1,
-                          Vectors.dense(centroidArray(ind)._2.map(_/numElemByCLust(ind)._2)),
-                          numElemByCLust(ind)._2.toInt
-                        ))
-    }
+    for( (clusterID, cardinality) <- numElemByCLust )
+      centroids += ((clusterID, Vectors.dense(centroidMapOrig(clusterID).map(_ / cardinality)), cardinality.toInt))
 
     /**
      * Fusion cluster with centroid < threshold
      */
 
     var stop2 = 1
-    var randomCentroidVector = centroidArray1(Random.nextInt(centroidArray1.size))._2
+    var randomCentroidVector = centroids(Random.nextInt(centroids.size))._2
     var newClusterID = 0
     val centroidArray2 = ArrayBuffer.empty[(Int, Vector)]
     val numElemByCluster2 = ArrayBuffer.empty[(Int, Int)]
-    val oldToNewLabelMap = scala.collection.mutable.Map.empty[Int, Int]
+    val oldToNewLabelMap = HashMap.empty[Int, Int]
     while (stop2 != 0) {
-      val closestClusters = centroidArray1.filter{ case(clusterID, vector, clusterCardinality) => { Vectors.sqdist(vector,randomCentroidVector) <= threshold_cluster2 }}
+      val closestClusters = centroids.filter{ case(clusterID, vector, clusterCardinality) => { Vectors.sqdist(vector,randomCentroidVector) <= threshold_cluster2 }}
       // We compute the mean of the cluster
       val gatheredCluster = closestClusters.map{ case(clusterID, vector, clusterCardinality) => (vector.toArray, clusterCardinality)}
                                       .reduce( (a, b) => (a._1 + b._1, a._2 + b._2) )
@@ -298,10 +297,10 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
       for( ind2 <- 0 until closestClusters.size) {
         oldToNewLabelMap += (closestClusters(ind2)._1 -> newClusterID)
       }
-      centroidArray1 --= closestClusters
+      centroids --= closestClusters
       // We keep Y* whose distance is greather than threshold
-      stop2 = centroidArray1.size
-      if(stop2 != 0) { randomCentroidVector = centroidArray1(Random.nextInt(centroidArray1.size))._2 }
+      stop2 = centroids.size
+      if(stop2 != 0) randomCentroidVector = centroids(Random.nextInt(centroids.size))._2
       newClusterID += 1
     }
 
@@ -314,34 +313,37 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
     val map_ind_all = numElemByCluster2.toMap
     val centroidArray3 = centroidArray2.zipWithIndex.map{ case((clusterID, vector), idx) => (idx, clusterID, vector, map_ind_all(clusterID), clusterID)}.toBuffer
   
-    while(indexOfSmallerClusters.size != 0) {
-      for ( (idxx, currentClusterID, vector2, sizecurrent, _) <- centroidArray3 ) {
-      if( sizecurrent < cmin )
+    while( indexOfSmallerClusters.size != 0 )
+    {
+      for ( (idxx, currentClusterID, vector2, sizecurrent, _) <- centroidArray3 )
       {
-        var sortedClosestCentroid = centroidArray3.map{ case(idx, newClusterID, vector, cardinality, originalClusterID) =>(Vectors.sqdist(vector, vector2), idx, newClusterID, cardinality)}.toArray
-        quickSort(sortedClosestCentroid)(Ordering[(Double)].on(_._1))
-        var cpt3 = 1
-        val newClusterIDsorted = sortedClosestCentroid(cpt3)._3 
-        while ( newClusterIDsorted == currentClusterID ) cpt3 += 1
-        val (_ ,_ , closestClusterID, closestClusterSize) = sortedClosestCentroid(cpt3)
-        val closestClusters = centroidArray3.par.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == closestClusterID}
-        val littleClusterWithSameCurrentLabel = centroidArray3.par.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == currentClusterID}
-        var idOfTreatedCluster = ArrayBuffer.empty[Int]
-        // Update
-        for( (idx, newClusterID, vector, cardinality, originalClusterID) <- closestClusters)
+        if( sizecurrent < cmin )
         {
-          idOfTreatedCluster += newClusterID
-          centroidArray3.update(idx, (idx, closestClusterID, vector, closestClusterSize + sizecurrent, originalClusterID))
+          val sortedClosestCentroid = centroidArray3.map{ case(idx, newClusterID, vector, cardinality, originalClusterID) =>(Vectors.sqdist(vector, vector2), idx, newClusterID, cardinality)}.toArray
+          quickSort(sortedClosestCentroid)(Ordering[(Double)].on(_._1))
+          var cpt3 = 1
+          val newClusterIDsorted = sortedClosestCentroid(cpt3)._3 
+          while ( newClusterIDsorted == currentClusterID ) cpt3 += 1
+          val (_, _, closestClusterID, closestClusterSize) = sortedClosestCentroid(cpt3)
+          val closestClusters = centroidArray3.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == closestClusterID}
+          val littleClusterWithSameCurrentLabel = centroidArray3.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == currentClusterID}
+          val idOfTreatedCluster = ArrayBuffer.empty[Int]
+          val newClusterSize = closestClusterSize + sizecurrent
+          // Update
+          for( (id, newClusterID, vector, cardinality, originalClusterID) <- closestClusters)
+          {
+            idOfTreatedCluster += newClusterID
+            centroidArray3(id) = (id, closestClusterID, vector, newClusterSize, originalClusterID)
+          }
+          for( (id, newClusterID, vector, cardinality, originalClusterID) <- littleClusterWithSameCurrentLabel)
+          {
+            idOfTreatedCluster += newClusterID
+            centroidArray3(id) = (id, closestClusterID, vector, newClusterSize, originalClusterID)
+          }
+          if( sizecurrent + closestClusterSize >= cmin ) indexOfSmallerClusters --= idOfTreatedCluster
         }
-        for( (idx, newClusterID, vector, cardinality, originalClusterID) <- littleClusterWithSameCurrentLabel)
-        {
-          idOfTreatedCluster += newClusterID
-          centroidArray3.update(idx, (idx, closestClusterID, vector, closestClusterSize + sizecurrent, originalClusterID))
-        }
-        if( sizecurrent + closestClusterSize >= cmin ){ indexOfSmallerClusters --= idOfTreatedCluster }
-      }
-      else { indexOfSmallerClusters -= idxx }
-      }       
+        else indexOfSmallerClusters -= idxx
+      }      
     }
 
 
@@ -355,12 +357,12 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
       val (_, newClusterID, _, _, originalClusterID) = tabbar000.value(cpt4)
       while ( clusterID != originalClusterID ) cpt4 += 1
       (newClusterID, (id, originalVector))
-    } }.partitionBy(new HashPartitioner(dp)).cache
+    } }
   
-    val k0 = rddf.countByKey
-    var numClust_Ystarer = k0.size 
-    val centroidF = rddf.map( x => (x._1,(x._2._2.toArray))).reduceByKey(_+_)
-                        .map( x => (x._1,Vectors.dense(x._2.map(_/k0(x._1)))))
+    val partitionedRDDF = rddf.map{ case(clusterID, (id, originalVector)) => (clusterID,(originalVector.toArray)) }.partitionBy(new HashPartitioner(dp)).cache
+    val clustersCardinalities = partitionedRDDF.countByKey
+    val centroidF = partitionedRDDF.reduceByKey(_ + _)
+                        .map{ case(clusterID, reducedVectors) => (clusterID, Vectors.dense(reducedVectors.map(_ / clustersCardinalities(clusterID)))) }
     
     val centroidMap = if( normalisation ) Fcts.descaleRDDcentroid(centroidF, maxMinArray).collect.toMap else centroidF.collect.toMap
 
@@ -373,11 +375,7 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
 
   for( ind00 <- 0 until nbLabelIter) {
     models += labelizing()    
-    if(ind00 == nbLabelIter-1) {
-      ww.destroy()
-      b.destroy()
-      tabHash0.destroy()
-    }
+    if(ind00 == nbLabelIter-1) tabHash0.destroy
   }
 
   readyToLabelization.unpersist()

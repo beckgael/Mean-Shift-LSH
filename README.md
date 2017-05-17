@@ -2,6 +2,9 @@
 
 This algorithm was created during an internship at Computer Science Laboratory (Laboratoire d'Informatique de Paris Nord, LIPN) at the University of Paris 13, with Lebbah Mustapha, Duong Tarn, Azzag Hanene and Beck Gaël. Its purpose is to provide an efficient distributed implementation to cluster large multivariate multidimensional data sets (Big Data)  Nearest neighbor mean shift (NNMS) defines clusters in terms of locally density regions in the data density. The main advantages of NNMS are that it can **detect automatically the number of clusters** in the data set and **detect non-ellipsoidal** clusters, in contrast to k-means clustering. Exact nearest neighbors calculations in the standard NNMS prevent from being used on Big Data so we introduce approximate nearest neighbors via Locality Sensitive Hashing (LSH), which are based on random scalar projections of the data. To further improve the scalability, we implement NNMS-LSH in the distributed Spark/Scala ecosystem.
 
+## Interesting Spark algorithms done at LIPN
+### https://github.com/Spark-clustering-notebook
+
 ### Parameters
 
 * **k** is the number of neighbours to look at in order to compute centroid.
@@ -15,13 +18,13 @@ This algorithm was created during an internship at Computer Science Laboratory (
 * **threshold_cluster1** is the threshold under which two final mean shift iterates are considered to be in the same cluster.
 * **threshold_cluster2** is the threshold under which two final clusters are considered to be the same.
 
+
+
+
 ## Usage
 
 ### Multivariate multidimensional clustering
 Unlike the image analysis which has a specific data pre-processing before the mean shift, for general multivariate multidimensional data sets, it is recommended to normalize data so that each variable has a comparable magnitude to the other variables to improve the performance in the distance matrix computation used to determine nearest neighbors.
-
-## Interesting links
-### https://github.com/Spark-clustering-notebook
 
 ### Image analysis
 

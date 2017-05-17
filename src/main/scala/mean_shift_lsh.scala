@@ -400,7 +400,6 @@ object MsLsh {
    * @param nbseg : number of segment on which we project vectors ( make sure it is big enought )
    * @param nbblocs1 : number of buckets used to compute modes
    * @param nbblocs2 : number of buckets used to fusion clusters
-   * @param nbPart : Level of parallelism outside the gradient ascent
    *
    */
 
@@ -419,7 +418,7 @@ object MsLsh {
     val rdd2 = rdd1.map{ case(clusterID, (id, vector)) => {
       var tabcoord = Array.empty[Double]
       for( ind0 <- 0 until size1) {
-        val coordXi = vector(ind0)*(maxArray(ind0)-minArray(ind0))+minArray(ind0)
+        val coordXi = vector(ind0) * (maxArray(ind0) - minArray(ind0)) + minArray(ind0)
         tabcoord = tabcoord :+ coordXi
       }
       (clusterID, id, Vectors.dense(tabcoord))          

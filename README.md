@@ -1,6 +1,6 @@
 # Distributed Nearest Neighbours Mean Shift with Locality Sensitive Hashing DNNMS-LSH
 
-This algorithm was created during an internship at Computer Science Laboratory (Laboratoire d'Informatique de Paris Nord, LIPN) at the University of Paris 13, with Lebbah Mustapha, Duong Tarn, Azzag Hanene and Beck Gaël. Its purpose is to provide an efficient distributed implementation to cluster large multivariate multidimensional data sets (Big Data)  Nearest neighbor mean shift (NNMS) defines clusters in terms of locally density regions in the data density. The main advantages of NNMS are that it can **detect automatically the number of clusters** in the data set and **detect non-ellipsoidal** clusters, in contrast to k-means clustering. Exact nearest neighbors calculations in the standard NNMS prevent from being used on Big Data so we introduce approximate nearest neighbors via Locality Sensitive Hashing (LSH), which are based on random scalar projections of the data. To further improve the scalability, we implement NNMS-LSH in the distributed Spark/Scala ecosystem.      
+This algorithm was created during an internship at Computer Science Laboratory (Laboratoire d'Informatique de Paris Nord, LIPN) at the University of Paris 13, with Lebbah Mustapha, Duong Tarn, Azzag Hanene and Beck Gaël. Its purpose is to provide an efficient distributed implementation to cluster large multivariate multidimensional data sets (Big Data)  Nearest neighbor mean shift (NNMS) defines clusters in terms of locally density regions in the data density. The main advantages of NNMS are that it can **detect automatically the number of clusters** in the data set and **detect non-ellipsoidal** clusters, in contrast to k-means clustering. Exact nearest neighbors calculations in the standard NNMS prevent from being used on Big Data so we introduce approximate nearest neighbors via Locality Sensitive Hashing (LSH), which are based on random scalar projections of the data. To further improve the scalability, we implement NNMS-LSH in the distributed Spark/Scala ecosystem.
 
 ### Parameters
 
@@ -11,7 +11,6 @@ This algorithm was created during an internship at Computer Science Laboratory (
 * **cmin**  is the threshold under which clusters with fewer than cmin members are merged with the next nearest cluster.
 * **normalisation** is a flag if the data should be first normalized (X-Xmin)/(Xmax-Xmin)  before clustering.
 * **w** is a uniformisation constant for LSH.
-* **npPart** is the default parallelism outside the gradient ascent.
 * **yStarIter** is the maximum number of iterations in the gradient ascent in the mean shift update.
 * **threshold_cluster1** is the threshold under which two final mean shift iterates are considered to be in the same cluster.
 * **threshold_cluster2** is the threshold under which two final clusters are considered to be the same.
@@ -20,6 +19,9 @@ This algorithm was created during an internship at Computer Science Laboratory (
 
 ### Multivariate multidimensional clustering
 Unlike the image analysis which has a specific data pre-processing before the mean shift, for general multivariate multidimensional data sets, it is recommended to normalize data so that each variable has a comparable magnitude to the other variables to improve the performance in the distance matrix computation used to determine nearest neighbors.
+
+## Interesting links
+# https://github.com/Spark-clustering-notebook
 
 ### Image analysis
 
@@ -44,8 +46,7 @@ To carry out image analysis, it is recommended to convert the usual color format
                           nbseg=100,
                           nbblocs1=50,
                           nbblocs2=50,
-                          nbLabelIter=1,
-                          nbPart=defp)  
+                          nbLabelIter=1)  
                           
   // Save result for an image as (ID, Vector, ClusterNumber)
   meanShift.saveImageAnalysis(model, "MyImageResultDirectory",1)

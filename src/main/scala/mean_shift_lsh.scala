@@ -315,47 +315,47 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
     val centroidArray3 = centroidArray2.zipWithIndex.map{ case((clusterID, vector), idx) => (idx, clusterID, vector, map_ind_all(clusterID), clusterID)}.toBuffer
   
     while(indexOfSmallerClusters.size != 0) {
-      for (cpt2 <- centroidArray3.indices) {
-      if(centroidArray3(cpt2)._4 < cmin){
-        val currentClusterID = centroidArray3(cpt2)._2
-        val vector2 = centroidArray3(cpt2)._3
-        val sizecurrent = centroidArray3(cpt2)._4
+      for ( (idxx, currentClusterID, vector2, sizecurrent, _) <- centroidArray3 ) {
+      if( sizecurrent < cmin )
+      {
         var sortedClosestCentroid = centroidArray3.map{ case(idx, newClusterID, vector, cardinality, originalClusterID) =>(Vectors.sqdist(vector, vector2), idx, newClusterID, cardinality)}.toArray
         quickSort(sortedClosestCentroid)(Ordering[(Double)].on(_._1))
         var cpt3 = 1
-        while (sortedClosestCentroid(cpt3)._3 == currentClusterID) {cpt3 += 1}
-        val closestCentroid = sortedClosestCentroid(cpt3)
-        val closestClusterID = closestCentroid._3
-        val closestClusterSize = closestCentroid._4
-        val closestClusters = centroidArray3.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == closestClusterID}
-        val littleClusterWithSameCurrentLabel = centroidArray3.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == currentClusterID}
+        val newClusterIDsorted = sortedClosestCentroid(cpt3)._3 
+        while ( newClusterIDsorted == currentClusterID ) cpt3 += 1
+        val (_ ,_ , closestClusterID, closestClusterSize) = sortedClosestCentroid(cpt3)
+        val closestClusters = centroidArray3.par.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == closestClusterID}
+        val littleClusterWithSameCurrentLabel = centroidArray3.par.filter{ case(idx, newClusterID, vector, cardinality, originalClusterID) => newClusterID == currentClusterID}
         var idOfTreatedCluster = ArrayBuffer.empty[Int]
         // Update
-        for( ind8 <- closestClusters.indices) {
-        idOfTreatedCluster += closestClusters(ind8)._2         
-        centroidArray3.update(closestClusters(ind8)._1, (closestClusters(ind8)._1, closestClusterID, closestClusters(ind8)._3, closestClusterSize + sizecurrent, closestClusters(ind8)._5))
+        for( (idx, newClusterID, vector, cardinality, originalClusterID) <- closestClusters)
+        {
+          idOfTreatedCluster += newClusterID
+          centroidArray3.update(idx, (idx, closestClusterID, vector, closestClusterSize + sizecurrent, originalClusterID))
         }
-        for( ind8 <- littleClusterWithSameCurrentLabel.indices) {
-        idOfTreatedCluster += littleClusterWithSameCurrentLabel(ind8)._2         
-        centroidArray3.update(littleClusterWithSameCurrentLabel(ind8)._1, (littleClusterWithSameCurrentLabel(ind8)._1, closestClusterID, littleClusterWithSameCurrentLabel(ind8)._3, closestClusterSize + sizecurrent, littleClusterWithSameCurrentLabel(ind8)._5))
+        for( (idx, newClusterID, vector, cardinality, originalClusterID) <- littleClusterWithSameCurrentLabel)
+        {
+          idOfTreatedCluster += newClusterID
+          centroidArray3.update(idx, (idx, closestClusterID, vector, closestClusterSize + sizecurrent, originalClusterID))
         }
         if( sizecurrent + closestClusterSize >= cmin ){ indexOfSmallerClusters --= idOfTreatedCluster }
       }
-      else { indexOfSmallerClusters -= centroidArray3(cpt2)._1 }
+      else { indexOfSmallerClusters -= idxx }
       }       
     }
 
 
     val tabbar000 = sc.broadcast(centroidArray3.toArray)
-    val oldToNewLabelMapb = sc.broadcast(oldToNewLabelMap)
+    val oldToNewLabelMapBC = sc.broadcast(oldToNewLabelMap)
 
-    val rdd_Ystar_labeled2 = rdd_Ystar_labeled.map( x => (oldToNewLabelMapb.value(x._1),x._2))
+    val ystarLabeledUpdatedRDD = rdd_Ystar_labeled.map{ case(clusterID, (id, originalVector, mod)) => (oldToNewLabelMapBC.value(clusterID), (id, originalVector, mod)) }
   
-    val rddf = rdd_Ystar_labeled2.map( x => {
+    val rddf = ystarLabeledUpdatedRDD.map{ case(clusterID, (id, originalVector, mod)) => {
       var cpt4 = 0
-      while ( x._1 != tabbar000.value(cpt4)._5) {cpt4 += 1}
-      (tabbar000.value(cpt4)._2,(x._2._1,x._2._2))
-    }).partitionBy(new HashPartitioner(dp)).cache
+      val (_, newClusterID, _, _, originalClusterID) = tabbar000.value(cpt4)
+      while ( clusterID != originalClusterID ) cpt4 += 1
+      (newClusterID, (id, originalVector))
+    } }.partitionBy(new HashPartitioner(dp)).cache
   
     val k0 = rddf.countByKey
     var numClust_Ystarer = k0.size 

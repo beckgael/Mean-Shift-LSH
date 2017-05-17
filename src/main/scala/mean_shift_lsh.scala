@@ -44,17 +44,9 @@ import java.io.FileWriter
 /**
  * The major class where MS-LSH algorithm and prediction fonction are implemented
  */
-class MsLsh private (private var k:Int, private var threshold_cluster1:Double, private var threshold_cluster2:Double, private var yStarIter:Int, private var cmin:Int, private var normalisation:Boolean, private var w:Int, private var nbseg:Int, private var nbblocs1:Int, private var nbblocs2:Int, private var nbLabelIter:Int, private var numPart:Int ) extends Serializable {  
+class MsLsh private (private var k:Int, private var threshold_cluster1:Double, private var threshold_cluster2:Double, private var yStarIter:Int, private var cmin:Int, private var normalisation:Boolean, private var w:Int, private var nbseg:Int, private var nbblocs1:Int, private var nbblocs2:Int, private var nbLabelIter:Int) extends Serializable {  
 
-  def this() = this(50, 0.001, 0.05, 10, 0, true, 1, 100, 100, 50, 5, 100)
-  
-  /**
-   * Set number of partition for coalesce and partioner
-   */
-  def set_numPart(nP:Int) : this.type = { 
-    this.numPart = nP
-    this
-  }
+  def this() = this(50, 0.001, 0.05, 10, 0, true, 1, 100, 100, 50, 5)
   
   /**
    * Set normalisation boolean
@@ -195,7 +187,8 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
     data.cache
     val size =  data.count().toInt
     val maxK = (size/nbblocs1).toInt -1 
-  
+    val dp = sc.defaultParallelism
+
     if (size < cmin) { throw new IllegalStateException("Exception : cmin > data size") }
     if (maxK <= k) { throw new IllegalStateException("Exception : You set a too high K value") }
     /**
@@ -268,11 +261,12 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
     /**
     * Gives Y* labels to original data
     */
-    val rdd_Ystar_labeled = clusterByLshBucket.map{ case(clusterID, (idx, mod, originalVector)) => (clusterID, (idx, originalVector, mod))}.partitionBy(new HashPartitioner(numPart)).cache
+    val rdd_Ystar_labeled = clusterByLshBucket.map{ case(clusterID, (idx, mod, originalVector)) => (clusterID, (idx, originalVector, mod))}.partitionBy(new HashPartitioner(dp)).cache
     
+    val centroidArray = rdd_Ystar_labeled.map{ case(clusterID, (idx, originalVector, mod)) => (clusterID , originalVector.toArray)}.reduceByKey(_ + _).sortBy(_._1).collect
+
     val numElemByCLust = rdd_Ystar_labeled.countByKey.toArray.sortBy(_._1)
 
-    val centroidArray = rdd_Ystar_labeled.map{ case(clusterID, (idx, originalVector, mod)) => (clusterID , originalVector.toArray)}.reduceByKey(_ + _).sortBy(_._1).collect
 
     val centroidArray1 = ArrayBuffer.empty[(Int, Vector, Int)]
 
@@ -298,7 +292,7 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
       val closestClusters = centroidArray1.filter{ case(clusterID, vector, clusterCardinality) => { Vectors.sqdist(vector,randomCentroidVector) <= threshold_cluster2 }}
       // We compute the mean of the cluster
       val gatheredCluster = closestClusters.map{ case(clusterID, vector, clusterCardinality) => (vector.toArray, clusterCardinality)}
-                                      .reduce( (a,b) => (a._1+b._1,a._2+b._2) )
+                                      .reduce( (a, b) => (a._1 + b._1, a._2 + b._2) )
       centroidArray2 += ( (newClusterID, Vectors.dense(gatheredCluster._1.map(_/closestClusters.size)) ) )
       numElemByCluster2 += ( (newClusterID, gatheredCluster._2) )
       for( ind2 <- 0 until closestClusters.size) {
@@ -361,7 +355,7 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
       var cpt4 = 0
       while ( x._1 != tabbar000.value(cpt4)._5) {cpt4 += 1}
       (tabbar000.value(cpt4)._2,(x._2._1,x._2._2))
-    }).partitionBy(new HashPartitioner(numPart)).cache
+    }).partitionBy(new HashPartitioner(dp)).cache
   
     val k0 = rddf.countByKey
     var numClust_Ystarer = k0.size 
@@ -412,8 +406,8 @@ object MsLsh {
    *
    */
 
-  def train(sc:SparkContext, data:RDD[(Long,Vector)], k:Int, threshold_cluster1:Double, threshold_cluster2:Double, yStarIter:Int, cmin:Int, normalisation:Boolean, w:Int, nbseg:Int, nbblocs1:Int, nbblocs2:Int, nbLabelIter:Int, nbPart:Int) : ArrayBuffer[Mean_shift_lsh_model] =
-      new MsLsh().set_k(k).set_threshold_cluster1(threshold_cluster1).set_threshold_cluster2(threshold_cluster2).set_yStarIter(yStarIter).set_cmin(cmin).set_boolnorm(normalisation).set_w(w).set_nbseg(nbseg).set_nbblocs1(nbblocs1).set_nbblocs2(nbblocs2).set_nbLabelIter(nbLabelIter).set_numPart(nbPart).run(sc, data)
+  def train(sc:SparkContext, data:RDD[(Long,Vector)], k:Int, threshold_cluster1:Double, threshold_cluster2:Double, yStarIter:Int, cmin:Int, normalisation:Boolean, w:Int, nbseg:Int, nbblocs1:Int, nbblocs2:Int, nbLabelIter:Int) : ArrayBuffer[Mean_shift_lsh_model] =
+      new MsLsh().set_k(k).set_threshold_cluster1(threshold_cluster1).set_threshold_cluster2(threshold_cluster2).set_yStarIter(yStarIter).set_cmin(cmin).set_boolnorm(normalisation).set_w(w).set_nbseg(nbseg).set_nbblocs1(nbblocs1).set_nbblocs2(nbblocs2).set_nbLabelIter(nbLabelIter).run(sc, data)
 
   /**
    * Restore RDD original value

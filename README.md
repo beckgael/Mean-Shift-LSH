@@ -21,7 +21,7 @@ This algorithm was created during an internship at Computer Science Laboratory (
 Unlike the image analysis which has a specific data pre-processing before the mean shift, for general multivariate multidimensional data sets, it is recommended to normalize data so that each variable has a comparable magnitude to the other variables to improve the performance in the distance matrix computation used to determine nearest neighbors.
 
 ## Interesting links
-# https://github.com/Spark-clustering-notebook
+### https://github.com/Spark-clustering-notebook
 
 ### Image analysis
 

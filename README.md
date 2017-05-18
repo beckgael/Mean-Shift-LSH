@@ -34,8 +34,10 @@ To carry out image analysis, it is recommended to convert the usual color format
   val sc = new SparkContext(conf)
   val defp = sc.defaultParallelism
   val meanShift = msLsh.MsLsh
-  val data = sc.textFile("myIndexedData.csv",defp)
-  val parsedData = data.map(x => x.split(',')).map(y => (y(0),Vectors.dense(y.tail.map(_.toDouble)))).cache
+  val data = sc.textFile("myData.csv",defp)
+  val parsedData = data.map(_.split(',').map(_.toDouble)).map(y => (Vectors.dense(y)))
+                        .zipWithIndex
+                        .map(_.swap)
   
   val model = meanShift.train(  sc,
                           parsedData,

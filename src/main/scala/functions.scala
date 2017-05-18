@@ -25,16 +25,15 @@ package msLsh
 import scala.util.Random
 import scala.util.Sorting.quickSort
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-import spire.implicits._
-import org.apache.spark.mllib.feature.StandardScaler
+import scala.math.{min, max}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.util._
+import org.apache.spark.mllib.feature.StandardScaler
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark
 import java.io._
-import scala.math.{min, max}
+import spire.implicits._
 
 object Fcts extends Serializable {
 
@@ -87,12 +86,12 @@ object Fcts extends Serializable {
    *   Third element is the array of min value for each component
    * Theses array are used in order to descale RDD
    */
-  def scaleRdd(rdd1:RDD[(Long,Vector)]) : (RDD[(Long,Vector)],Array[Double],Array[Double]) = {
+  def scaleRdd(rdd1:RDD[(Long, Vector)]) : (RDD[(Long, Vector)], Array[Double], Array[Double]) = {
     rdd1.cache
     val vecttest = rdd1.first._2
     val size1 = vecttest.size
 
-    val minMaxArray = rdd1.map{ case(id, vector) => vector.toArray.map(value => (value, value))}.reduce( (v1, v2) => v1.zip(v2).map{ case(((min1,max1),(min2,max2))) => (min(min1, min2), max(max1, max2))})
+    val minMaxArray = rdd1.map{ case(id, vector) => vector.toArray.map(value => (value, value))}.reduce( (v1, v2) => v1.zip(v2).map{ case(((min1, max1), (min2, max2))) => (min(min1, min2), max(max1, max2))})
 
     val minArray = minMaxArray.map{ case((min, max)) => min }
     val maxArray = minMaxArray.map{ case((min, max)) => max }
@@ -111,7 +110,7 @@ object Fcts extends Serializable {
   /**
    * Restore centroid's original value
    */
-  def descaleRDDcentroid(rdd1:RDD[(Int, Vector)],maxMinArray0:Array[Array[Double]]) : RDD[(Int, Vector)] = {
+  def descaleRDDcentroid(rdd1:RDD[(Int, Vector)], maxMinArray0:Array[Array[Double]]) : RDD[(Int, Vector)] = {
     val vecttest = rdd1.first._2
     val size1 = vecttest.size
     val maxArray = maxMinArray0(0)

@@ -347,16 +347,16 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
   
     val partitionedRDDF = rdd_Ystar_labeled.map{ case(clusterID, (id, originalVector, mod)) => (newCentroidIDByOldOneMapBC.value(clusterID), (id, originalVector)) }.partitionBy(new HashPartitioner(dp))
   
-    val partitionedRDDFforStats = partitionedRDDF.map{ case(clusterID, (id, originalVector)) => (clusterID,(originalVector.toArray)) }.cache
+    val partitionedRDDFforStats = partitionedRDDF.map{ case(clusterID, (id, originalVector)) => (clusterID, (originalVector.toArray)) }.cache
     val clustersCardinalities = partitionedRDDFforStats.countByKey
     val centroidF = partitionedRDDFforStats.reduceByKey(_ + _)
                         .map{ case(clusterID, reducedVectors) => (clusterID, Vectors.dense(reducedVectors.map(_ / clustersCardinalities(clusterID)))) }
     
     val centroidMap = if( normalisation ) Fcts.descaleRDDcentroid(centroidF, maxMinArray).collect.toMap else centroidF.collect.toMap
 
-    rdd_Ystar_labeled.unpersist()
     val msmodel = new Mean_shift_lsh_model(centroidMap, partitionedRDDF, maxMinArray)
-    //rddf.unpersist()
+    rdd_Ystar_labeled.unpersist(true)
+    partitionedRDDFforStats.unpersist(true)
     msmodel
     
   }

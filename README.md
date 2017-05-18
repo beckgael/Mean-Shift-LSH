@@ -32,9 +32,8 @@ To carry out image analysis, it is recommended to convert the usual color format
 ```scala
 
   val sc = new SparkContext(conf)
-  val defp = sc.defaultParallelism
   val meanShift = msLsh.MsLsh
-  val data = sc.textFile("myData.csv",defp)
+  val data = sc.textFile("myData.csv")
   val parsedData = data.map(_.split(',').map(_.toDouble)).map(y => (Vectors.dense(y)))
                         .zipWithIndex
                         .map(_.swap)

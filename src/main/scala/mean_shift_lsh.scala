@@ -43,7 +43,7 @@ import java.io.FileWriter
 /**
  * The major class where MS-LSH algorithm and prediction fonction are implemented
  */
-class MsLsh private (private var k:Int, private var threshold_cluster1:Double, private var threshold_cluster2:Double, private var yStarIter:Int, private var cmin:Int, private var normalisation:Boolean, private var w:Int, private var nbseg:Int, private var nbblocs1:Int, private var nbblocs2:Int, private var nbLabelIter:Int) extends Serializable {  
+class MsLsh private (private var k:Int, private var epsilon1:Double, private var epsilon2:Double, private var yStarIter:Int, private var cmin:Int, private var normalisation:Boolean, private var w:Int, private var nbseg:Int, private var nbblocs1:Int, private var nbblocs2:Int, private var nbLabelIter:Int) extends Serializable {  
 
   def this() = this(50, 0.001, 0.05, 10, 0, true, 1, 100, 100, 50, 5)
   
@@ -98,16 +98,16 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
   /**
    * Set threshold 1 for labeling step
    */
-  def set_threshold_cluster1(threshold_cluster1_val:Double) : this.type = {
-    this.threshold_cluster1 = threshold_cluster1_val
+  def set_epsilon1(epsilon1_val:Double) : this.type = {
+    this.epsilon1 = epsilon1_val
     this
   }  
 
   /**
    * Set threshold 2 for labeling step
    */
-  def set_threshold_cluster2(threshold_cluster2_val:Double) : this.type = {
-    this.threshold_cluster2 = threshold_cluster2_val
+  def set_epsilon2(epsilon2_val:Double) : this.type = {
+    this.epsilon2 = epsilon2_val
     this
   }
   
@@ -153,12 +153,12 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
   /**
    * Get threshold 1 value
    */
-  def get_threshold_cluster1 = this.threshold_cluster1
+  def get_epsilon1 = this.epsilon1
     
   /**
    * Get threshold 2 value
    */
-  def get_threshold_cluster2 = this.threshold_cluster2
+  def get_epsilon2 = this.epsilon2
   
   /**
    * Get number of iteration for gradient ascend
@@ -243,7 +243,7 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
       var mod1 = bucket(Random.nextInt(bucket.size))._2
       var clusterID = (ind + 1) * 10000
       while ( stop != 0 ) {
-          val rdd_Clust_i_ind = bucket.filter{ case(_, mod, originalVector) => { Vectors.sqdist(mod, mod1) <= threshold_cluster1 } }
+          val rdd_Clust_i_ind = bucket.filter{ case(_, mod, originalVector) => { Vectors.sqdist(mod, mod1) <= epsilon1 } }
           val rdd_Clust_i2_ind = rdd_Clust_i_ind.map{ case(id, mod, originalVector) => (clusterID, (id, mod, originalVector))}
           labeledData ++= rdd_Clust_i2_ind
           // We keep Y* whose distance is greather than threshold
@@ -267,28 +267,28 @@ class MsLsh private (private var k:Int, private var threshold_cluster1:Double, p
 
     val numElemByCLust = rdd_Ystar_labeled.countByKey
 
-    val centroids = ArrayBuffer.empty[(Int, Vector, Int)]
+    val centroids = ArrayBuffer.empty[(Int, Vector, Long)]
 
     // Form the array of clusters centroids
     for( (clusterID, cardinality) <- numElemByCLust )
-      centroids += ((clusterID, Vectors.dense(centroidMapOrig(clusterID).map(_ / cardinality)), cardinality.toInt))
+      centroids += ((clusterID, Vectors.dense(centroidMapOrig(clusterID).map(_ / cardinality)), cardinality))
 
     /**
      * Fusion cluster with centroid < threshold
      */
 
     val newCentroids = ArrayBuffer.empty[(Int, Vector)]
-    val numElemByCluster = HashMap.empty[Int, Int]
+    val numElemByCluster = HashMap.empty[Int, Long]
     val oldToNewLabelMap = HashMap.empty[Int, Int]
     var randomCentroidVector = centroids(Random.nextInt(centroids.size))._2
     var newClusterID = 0
     var stop2 = 1
     while (stop2 != 0) {
-      val closestClusters = centroids.filter{ case(clusterID, vector, clusterCardinality) => { Vectors.sqdist(vector,randomCentroidVector) <= threshold_cluster2 }}
+      val closestClusters = centroids.filter{ case(clusterID, vector, clusterCardinality) => { Vectors.sqdist(vector,randomCentroidVector) <= epsilon2 }}
       // We compute the mean of the cluster
       val gatheredCluster = closestClusters.map{ case(clusterID, vector, clusterCardinality) => (vector.toArray, clusterCardinality)}
                                       .reduce( (a, b) => (a._1 + b._1, a._2 + b._2) )
-      newCentroids += ( (newClusterID, Vectors.dense(gatheredCluster._1.map(_/closestClusters.size)) ) )
+      newCentroids += ( (newClusterID, Vectors.dense(gatheredCluster._1.map(_ / closestClusters.size)) ) )
       numElemByCluster += ( newClusterID -> gatheredCluster._2 )
       for( (clusterID, _, _) <- closestClusters ) {
         oldToNewLabelMap += (clusterID -> newClusterID)
@@ -386,8 +386,8 @@ object MsLsh {
    * @param sc : SparkContext`
    * @param data : an RDD[(String,Vector)] where String is the ID and Vector the rest of data
    * @param k : number of neighbours to look at during gradient ascent
-   * @parem threshold_cluster1 : threshold under which we give the same label to two points
-   * @parem threshold_cluster2 : threshold under which we give the same label to two close clusters
+   * @parem epsilon1 : threshold under which we give the same label to two points
+   * @parem epsilon2 : threshold under which we give the same label to two close clusters
    * @param yStarIter : Number of iteration for modes search
    * @param cmin : threshold under which we fusion little cluster with the nearest cluster
    * @param normalisation : Normalise the dataset (it is recommand to have same magnitude order beetween features)
@@ -398,8 +398,8 @@ object MsLsh {
    *
    */
 
-  def train(sc:SparkContext, data:RDD[(Long,Vector)], k:Int, threshold_cluster1:Double, threshold_cluster2:Double, yStarIter:Int, cmin:Int, normalisation:Boolean, w:Int, nbseg:Int, nbblocs1:Int, nbblocs2:Int, nbLabelIter:Int) : ArrayBuffer[Mean_shift_lsh_model] =
-      new MsLsh().set_k(k).set_threshold_cluster1(threshold_cluster1).set_threshold_cluster2(threshold_cluster2).set_yStarIter(yStarIter).set_cmin(cmin).set_boolnorm(normalisation).set_w(w).set_nbseg(nbseg).set_nbblocs1(nbblocs1).set_nbblocs2(nbblocs2).set_nbLabelIter(nbLabelIter).run(sc, data)
+  def train(sc:SparkContext, data:RDD[(Long,Vector)], k:Int, epsilon1:Double, epsilon2:Double, yStarIter:Int, cmin:Int, normalisation:Boolean, w:Int, nbseg:Int, nbblocs1:Int, nbblocs2:Int, nbLabelIter:Int) : ArrayBuffer[Mean_shift_lsh_model] =
+      new MsLsh().set_k(k).set_epsilon1(epsilon1).set_epsilon2(epsilon2).set_yStarIter(yStarIter).set_cmin(cmin).set_boolnorm(normalisation).set_w(w).set_nbseg(nbseg).set_nbblocs1(nbblocs1).set_nbblocs2(nbblocs2).set_nbLabelIter(nbLabelIter).run(sc, data)
 
   /**
    * Restore RDD original value

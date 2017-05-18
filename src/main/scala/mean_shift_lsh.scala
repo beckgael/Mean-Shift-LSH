@@ -178,7 +178,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
   /**
    * Mean Shift LSH accomplish his clustering work
    */
-  def run(sc:SparkContext, data:RDD[(Long,Vector)]) : ArrayBuffer[Mean_shift_lsh_model] = {
+  def run(sc:SparkContext, data:RDD[(Long, Vector)]) : ArrayBuffer[Mean_shift_lsh_model] = {
 
     /**
     * Initialisation 

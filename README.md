@@ -15,8 +15,8 @@ This algorithm was created during an internship at Computer Science Laboratory (
 * **normalisation** is a flag if the data should be first normalized (X-Xmin)/(Xmax-Xmin)  before clustering.
 * **w** is a uniformisation constant for LSH.
 * **yStarIter** is the maximum number of iterations in the gradient ascent in the mean shift update.
-* **threshold_cluster1** is the threshold under which two final mean shift iterates are considered to be in the same cluster.
-* **threshold_cluster2** is the threshold under which two final clusters are considered to be the same.
+* **epsilon1** is the threshold under which two final mean shift iterates are considered to be in the same cluster.
+* **epsilon2** is the threshold under which two final clusters are considered to be the same.
 
 
 
@@ -40,8 +40,8 @@ To carry out image analysis, it is recommended to convert the usual color format
   val model = meanShift.train(  sc,
                           parsedData,
                           k=60,
-                          threshold_cluster1=0.05,
-                          threshold_cluster2=0.05,
+                          epsilon1=0.05,
+                          epsilon2=0.05,
                           yStarIter=10,
                           cmin=0,
                           normalisation=true,
@@ -68,8 +68,8 @@ The picture on top left corner is the #117 from Berkeley Segmentation Dataset an
 * **nbblocs1** : 200 (top right) , 500 (bottom left), 1000 (bottom right) 
 * **nbblocs2** : 1
 * **k** : 50
-* **threshold_cluster1** : 0.05
-* **threshold_cluster2** : 0.05 // doesn't matter with nbblocs2 = 1
+* **epsilon1** : 0.05
+* **epsilon2** : 0.05 // doesn't matter with nbblocs2 = 1
 * **yStarIter** : 10
 * **nbLabelIter** : 1
 * **w** : 1

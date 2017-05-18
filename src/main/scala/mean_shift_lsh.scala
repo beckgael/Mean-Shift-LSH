@@ -341,28 +341,21 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
       }      
     }
 
+    val newCentroidIDByOldOneMap = toGatherCentroids.map{ case(id, newClusterID, vector, cardinality, originalClusterID) => (originalClusterID, newClusterID) }.toMap
 
-    val finalCentroids = sc.broadcast(toGatherCentroids.toArray)
-    val oldToNewLabelMapBC = sc.broadcast(oldToNewLabelMap)
-
-    val ystarLabeledUpdatedRDD = rdd_Ystar_labeled.map{ case(clusterID, (id, originalVector, mod)) => (oldToNewLabelMapBC.value(clusterID), (id, originalVector, mod)) }
+    val newCentroidIDByOldOneMapBC = sc.broadcast(oldToNewLabelMap.mapValues(v => newCentroidIDByOldOneMap(v)))
   
-    val rddf = ystarLabeledUpdatedRDD.map{ case(clusterID, (id, originalVector, mod)) => {
-      var cpt = 0
-      val (_, newClusterID, _, _, originalClusterID) = finalCentroids.value(cpt)
-      while ( clusterID != originalClusterID ) cpt += 1
-      (newClusterID, (id, originalVector))
-    } }
+    val partitionedRDDF = rdd_Ystar_labeled.map{ case(clusterID, (id, originalVector, mod)) => (newCentroidIDByOldOneMapBC.value(clusterID), (id, originalVector)) }.partitionBy(new HashPartitioner(dp))
   
-    val partitionedRDDF = rddf.map{ case(clusterID, (id, originalVector)) => (clusterID,(originalVector.toArray)) }.partitionBy(new HashPartitioner(dp)).cache
-    val clustersCardinalities = partitionedRDDF.countByKey
-    val centroidF = partitionedRDDF.reduceByKey(_ + _)
+    val partitionedRDDFforStats = partitionedRDDF.map{ case(clusterID, (id, originalVector)) => (clusterID,(originalVector.toArray)) }.cache
+    val clustersCardinalities = partitionedRDDFforStats.countByKey
+    val centroidF = partitionedRDDFforStats.reduceByKey(_ + _)
                         .map{ case(clusterID, reducedVectors) => (clusterID, Vectors.dense(reducedVectors.map(_ / clustersCardinalities(clusterID)))) }
     
     val centroidMap = if( normalisation ) Fcts.descaleRDDcentroid(centroidF, maxMinArray).collect.toMap else centroidF.collect.toMap
 
     rdd_Ystar_labeled.unpersist()
-    val msmodel = new Mean_shift_lsh_model(centroidMap, rddf, maxMinArray)
+    val msmodel = new Mean_shift_lsh_model(centroidMap, partitionedRDDF, maxMinArray)
     //rddf.unpersist()
     msmodel
     

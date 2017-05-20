@@ -19,7 +19,7 @@ This algorithm was created during an internship at Computer Science Laboratory (
 * **yStarIter** is the maximum number of iterations in the gradient ascent in the mean shift update.
 * **epsilon1** is the threshold under which two final mean shift iterates are considered to be in the same cluster.
 * **epsilon2** is the threshold under which two final clusters are considered to be the same.
-
+* **nbLabelIter** determine how many times the labelization step will be accomplish giving as many models as the provided value
 
 
 
@@ -40,7 +40,7 @@ To carry out image analysis, it is recommended to convert the usual color format
                         .zipWithIndex
                         .map(_.swap)
   
-  val model = meanShift.train(  sc,
+  val models = meanShift.train(  sc,
                           parsedData,
                           k=60,
                           epsilon1=0.05,
@@ -55,13 +55,13 @@ To carry out image analysis, it is recommended to convert the usual color format
                           nbLabelIter=1)  
                           
   // Save result for an image as (ID, Vector, ClusterNumber)
-  meanShift.saveImageAnalysis(model, "MyImageResultDirectory",1)
+  meanShift.saveImageAnalysis(models.head, "MyImageResultDirectory",1)
 
   // Save result as (ID, ClusterNumber)
-  meanShift.savelabeling(model, "MyResultDirectory", 1)
+  meanShift.savelabeling(models.head, "MyResultDirectory", 1)
 
   // Save centroids result as (NumCluster, cardinality, CentroidVector)
-  meanShift.saveClusterInfo(sc, model, "centroidDirectory")
+  meanShift.saveClusterInfo(sc, models.head, "centroidDirectory")
 
 ```
 

@@ -19,7 +19,7 @@ This algorithm was created during an internship at Computer Science Laboratory (
 * **yStarIter** is the maximum number of iterations in the gradient ascent in the mean shift update.
 * **epsilon1** is the threshold under which two final mean shift iterates are considered to be in the same cluster.
 * **epsilon2** is the threshold under which two final clusters are considered to be the same.
-* **nbLabelIter** determine how many times the labelization step will be accomplish giving as many models as the provided value
+* **nbLabelIter** is the number of iteration for the labelisation step, it determines the number of final models
 
 
 

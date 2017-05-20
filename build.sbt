@@ -1,5 +1,3 @@
-//import bintray.Keys._
-
 name := "Mean-Shift-LSH"
 
 version := "1.1"
@@ -23,5 +21,3 @@ licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html
 bintrayOrganization in bintray := None
 
 credentials += Credentials(Path.userHome / ".bintray" / ".credentials")
-
-//publishMavenStyle := false

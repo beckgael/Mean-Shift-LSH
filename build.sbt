@@ -1,16 +1,22 @@
+//import bintray.Keys._
+
+sbtPlugin := true
+
 name := "Neirest-Neighbours-Mean-Shift-LSH"
 
-version := "1.0.5"
+version := "1.1"
 
-organization := "spartakus"
+organization := "beck"
 
-bintrayOrganization := Some("spartakus")
+//bintrayOrganization := Some("spartakus")
 
 scalaVersion := "2.10.5"
 
-val sparkVersion = "1.4.1"
+val sparkVersion = "1.6.2"
 
-resolvers += Resolver.bintrayRepo("otherUser", "maven")
+//resolvers += Resolver.jcenterRepo
+
+//resolvers += Resolver.bintrayRepo("beckgael", "Mean-Shift-LSH")
 
 libraryDependencies ++= Seq(
 	"org.apache.spark" %% "spark-core" % sparkVersion,
@@ -22,10 +28,16 @@ licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html
 
 credentials += Credentials(Path.userHome / ".bintray" / ".credentials")
 
-resolvers += Resolver.jcenterRepo
+publishMavenStyle := true
 
-publishMavenStyle := false
+publishArtifact := true
 
-bintrayRepository := "neirest-neighbours-mean-shift-lsh"
+//bintrayPublishSettings
 
-//bintrayOrganization in bintray := None
+//repository in bintray := "sbt-plugins"
+
+//publishMavenStyle := false
+
+//bintrayRepository := "bintray-beckgael-Mean-Shift-LSH"
+
+bintrayOrganization in bintray := None

@@ -219,7 +219,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
       lineageRDDs(ind + 1) = rdd_LSH_ord.map{ case(id, originalVector, mod) => (id, originalVector, mod, Fcts.hashfunc(mod, w, b, hashTab.value))}
     }
 
-    val readyToLabelization = if( nbblocs2 == 1 ) lineageRDDs.last.map{ case(id, mod, originalVector, hashV) => (id, mod, originalVector)} 
+    val readyToLabelization = if( nbblocs2 == 1 ) lineageRDDs.last.map{ case(id, mod, originalVector, hashV) => (id, mod, originalVector)}.coalesce(1)
                               else lineageRDDs.last.sortBy({case(_, _, _, hashValue) => hashValue}, ascending=true, nbblocs2).map{ case(id, mod, originalVector, hashV) => (id, mod, originalVector)}
     
     if( nbLabelIter > 1 ) readyToLabelization.cache

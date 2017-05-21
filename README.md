@@ -61,7 +61,7 @@ To carry out image analysis, it is recommended to convert the usual color format
   meanShift.savelabeling(models.head, "MyResultDirectory", 1)
 
   // Save centroids result as (NumCluster, cardinality, CentroidVector)
-  meanShift.saveClusterInfo(sc, models.head, "centroidDirectory")
+  meanShift.saveClusterInfo(models.head, "centroidDirectory")
 
 ```
 

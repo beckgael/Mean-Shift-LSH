@@ -323,7 +323,6 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
           clusterIDsOfSmallerOne -= originalClusterIDR
           littleClusters -= ( (idR, originalClusterIDR, vectorR, cardinalityR, originalClusterIDR) )
           toGatherCentroids(idxR) = (idxR, closestClusterID, vectorR, totSize, originalClusterIDR)
-
         }
       }
 

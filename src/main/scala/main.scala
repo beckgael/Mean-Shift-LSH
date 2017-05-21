@@ -16,7 +16,7 @@ object Main {
 					.zipWithIndex
 					.map{ case(data, id) => (id, Vectors.dense(data))}.cache
 
-	val model = meanShift.train(sc, data, k=args(0).toInt, epsilon1=args(1).toDouble, epsilon2=args(2).toDouble, yStarIter=args(3).toInt, cmin=args(4).toInt, normalisation=args(5).toBoolean, w=1, nbseg=100, nbblocs1=args(6).toInt, nbblocs2=args(7).toInt, nbLabelIter=args(8).toInt)  
+	val model = meanShift.train(sc, data, k=args(1).toInt, epsilon1=args(2).toDouble, epsilon2=args(3).toDouble, yStarIter=args(4).toInt, cmin=args(5).toInt, normalisation=args(6).toBoolean, w=1, nbseg=100, nbblocs1=args(7).toInt, nbblocs2=args(8).toInt, nbLabelIter=args(9).toInt)  
 
 	meanShift.savelabeling(model(0),"/myPath/label")
 	meanShift.saveClusterInfo(model(0),"/myPath/clusterInfo")

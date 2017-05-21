@@ -354,7 +354,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
       models += labelizing()    
       if( ind == nbLabelIter - 1 ) hashTab.destroy
     }
-    
+
     readyToLabelization.unpersist()
     models
   } 
@@ -368,8 +368,8 @@ object MsLsh {
    * @param sc : SparkContext`
    * @param data : an RDD[(String,Vector)] where String is the ID and Vector the rest of data
    * @param k : number of neighbours to look at during gradient ascent
-   * @parem epsilon1 : threshold under which we give the same label to two points
-   * @parem epsilon2 : threshold under which we give the same label to two close clusters
+   * @param epsilon1 : threshold under which we give the same label to two points
+   * @param epsilon2 : threshold under which we give the same label to two close clusters
    * @param yStarIter : Number of iteration for modes search
    * @param cmin : threshold under which we fusion little cluster with the nearest cluster
    * @param normalisation : Normalise the dataset (it is recommand to have same magnitude order beetween features)

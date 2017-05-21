@@ -276,9 +276,8 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
       val oldToNewLabelMap = HashMap.empty[Int, Int]
       var randomCentroidVector = centroids(Random.nextInt(centroids.size))._2
       var newClusterID = 0
-      var stop2 = 1
-      while (stop2 != 0) {
-        val closestClusters = centroids.filter{ case(clusterID, vector, clusterCardinality) => { Vectors.sqdist(vector,randomCentroidVector) <= epsilon2 }}
+      while ( centroids.size != 0 ) {
+        val closestClusters = centroids.filter{ case(clusterID, vector, clusterCardinality) => { Vectors.sqdist(vector, randomCentroidVector) <= epsilon2 }}
         // We compute the mean of the cluster
         val gatheredCluster = closestClusters.map{ case(clusterID, vector, clusterCardinality) => (vector.toArray, clusterCardinality) }.reduce( (a, b) => (a._1 + b._1, a._2 + b._2) )
         newCentroids += ( (newClusterID, Vectors.dense(gatheredCluster._1.map(_ / closestClusters.size))) )
@@ -288,8 +287,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
         }
         centroids --= closestClusters
         // We keep Y* whose distance is greather than threshold
-        stop2 = centroids.size
-        if(stop2 != 0) randomCentroidVector = centroids(Random.nextInt(centroids.size))._2
+        if( centroids.size != 0 ) randomCentroidVector = centroids(Random.nextInt(centroids.size))._2
         newClusterID += 1
       }
 
@@ -318,17 +316,15 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
           totSize += cardinalityK
         }
 
-        val clusterIDsToRemove = ArrayBuffer.empty[Int]
-
         for( idxR <- idxToReplace )
         {
           val (idR, _, vectorR, cardinalityR, originalClusterIDR) = toGatherCentroids(idxR)
           clusterIDsToRemove += originalClusterIDR
+          clusterIDsOfSmallerOne -= originalClusterIDR
           littleClusters -= ( (idR, originalClusterIDR, vectorR, cardinalityR, originalClusterIDR) )
           toGatherCentroids(idxR) = (idxR, closestClusterID, vectorR, totSize, originalClusterIDR)
 
         }
-        clusterIDsOfSmallerOne --= clusterIDsToRemove
       }
 
       val newCentroidIDByOldOneMap = toGatherCentroids.map{ case(id, newClusterID, vector, cardinality, originalClusterID) => (originalClusterID, newClusterID) }.toMap
@@ -350,10 +346,8 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
       msmodel 
     }
 
-    for( ind <- 0 until nbLabelIter) {
+    for( ind <- 0 until nbLabelIter)
       models += labelizing()    
-      if( ind == nbLabelIter - 1 ) hashTab.destroy
-    }
 
     readyToLabelization.unpersist(false)
     models

@@ -1,3 +1,4 @@
+/*
 package msLsh
 
 import org.apache.spark.SparkContext
@@ -23,3 +24,4 @@ object Main {
 
 	}
 }
+*/

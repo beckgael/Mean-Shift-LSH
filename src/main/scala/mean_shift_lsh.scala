@@ -202,26 +202,25 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
     val b = Random.nextDouble * w
     val hashTab = sc.broadcast(Fcts.tabHash(nbseg, dim))
   
-    val rdd_LSH = normalizedOrNotRDD.map{ case(id, vector) => (id, vector, vector, Fcts.hashfunc(vector, w, b, hashTab.value)) }.repartition(nbblocs1)
+    val rdd_LSH = normalizedOrNotRDD.map{ case(id, vector) => (id, vector, vector, Fcts.hashfunc(vector, w, b, hashTab.value)) }
     data.unpersist(true)
     val lineageRDDs = new Array[RDD[(Long, Vector, Vector, Double)]](yStarIter + 1)
     lineageRDDs(0) = rdd_LSH
    
-    for( ind <- 0 until yStarIter  ) {
-      val rdd_LSH_ord =  lineageRDDs(ind).sortBy{ case(_, _, _, hashValue) => hashValue }.mapPartitions(it => {
+    for( ind <- 0 until yStarIter  )
+    {
+      val rdd_LSH_ord =  lineageRDDs(ind).sortBy({case(_, _, _, hashValue) => hashValue}, ascending=true, nbblocs1).mapPartitions(it => {
         val approxKNN = it.toArray
         approxKNN.map{ case(id, originalVector, mod, hashV) => {
           val distKNNFromCurrentPoint = approxKNN.map{ case(_, originalVector2, mod2, hashV2) => (originalVector2, Vectors.sqdist(mod, originalVector2)) }.sortBy(_._2)
           (id, originalVector, Fcts.computeCentroid(distKNNFromCurrentPoint.take(k), k))
         }}.toIterator
-      }
-      ,true)
-      
+      })
       lineageRDDs(ind + 1) = rdd_LSH_ord.map{ case(id, originalVector, mod) => (id, originalVector, mod, Fcts.hashfunc(mod, w, b, hashTab.value))}
     }
 
     val readyToLabelization = if( nbblocs2 == 1 ) lineageRDDs.last.map{ case(id, mod, originalVector, hashV) => (id, mod, originalVector)} 
-                              else lineageRDDs.last.sortBy{ case(_, _, _, hashValue) => hashValue }.map{ case(id, mod, originalVector, hashV) => (id, mod, originalVector)}.coalesce(nbblocs2, shuffle = false)
+                              else lineageRDDs.last.sortBy({case(_, _, _, hashValue) => hashValue}, ascending=true, nbblocs2).map{ case(id, mod, originalVector, hashV) => (id, mod, originalVector)}
     
     if( nbLabelIter > 1 ) readyToLabelization.cache
 
@@ -334,7 +333,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
         }
         clusterIDsOfSmallerOne --= clusterIDsToRemove
       }
-      
+
       val newCentroidIDByOldOneMap = toGatherCentroids.map{ case(id, newClusterID, vector, cardinality, originalClusterID) => (originalClusterID, newClusterID) }.toMap
 
       val newCentroidIDByOldOneMapBC = sc.broadcast(oldToNewLabelMap.map{ case(k, v) => (k, newCentroidIDByOldOneMap(v)) })
@@ -448,7 +447,7 @@ object MsLsh {
   /*
    * Prediction function which tell in which cluster a vector should belongs to
    */
-  def prediction(v:Vector, mapCentroid:Map[Int,Vector]) : Int = mapCentroid.map{ case(clusterID, centroid) => (clusterID,Vectors.sqdist(v, centroid)) }.toArray.sortBy(_._2).head._1
+  def prediction(v:Vector, mapCentroid:Map[Int,Vector]) : Int = mapCentroid.map{ case(clusterID, centroid) => (clusterID, Vectors.sqdist(v, centroid)) }.toArray.sortBy(_._2).head._1
 } 
 
 

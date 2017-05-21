@@ -183,7 +183,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
     * Initialisation 
     */
     data.cache
-    val size =  data.count().toInt
+    val size =  data.count.toInt
     val maxK = (size / nbblocs1).toInt -1 
     val dp = sc.defaultParallelism
 
@@ -194,7 +194,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
     */
     val (normalizedOrNotRDD, maxArray, minArray) = if(normalisation) Fcts.scaleRdd(data) else (data, Array.empty[Double], Array.empty[Double])    
     val dim = normalizedOrNotRDD.first._2.size
-    val maxMinArray = Array(maxArray, minArray) 
+    val maxMinArray = (maxArray, minArray) 
     
     /**
     * Gradient ascent / Research of Y* 
@@ -355,7 +355,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
       if( ind == nbLabelIter - 1 ) hashTab.destroy
     }
 
-    readyToLabelization.unpersist()
+    readyToLabelization.unpersist(false)
     models
   } 
 }
@@ -382,20 +382,20 @@ object MsLsh {
    */
 
   def train(sc:SparkContext, data:RDD[(Long,Vector)], k:Int, epsilon1:Double, epsilon2:Double, yStarIter:Int, cmin:Int, normalisation:Boolean, w:Int, nbseg:Int, nbblocs1:Int, nbblocs2:Int, nbLabelIter:Int) : ArrayBuffer[Mean_shift_lsh_model] =
-      new MsLsh().set_k(k).set_epsilon1(epsilon1).set_epsilon2(epsilon2).set_yStarIter(yStarIter).set_cmin(cmin).set_boolnorm(normalisation).set_w(w).set_nbseg(nbseg).set_nbblocs1(nbblocs1).set_nbblocs2(nbblocs2).set_nbLabelIter(nbLabelIter).run(sc, data)
+      new MsLsh(k, epsilon1, epsilon2, yStarIter, cmin, normalisation, w, nbseg, nbblocs1, nbblocs2, nbLabelIter).run(sc, data)
 
   /**
    * Restore RDD original value
    */
-  val descaleRDD = (toDescaleRDD:RDD[(Int, (Long, Vector))], maxMinArray0:Array[Array[Double]]) => 
+  val descaleRDD = (toDescaleRDD:RDD[(Int, (Long, Vector))], maxMinArray:(Array[Double], Array[Double])) => 
   {
-    val vecttest = toDescaleRDD.first()._2._2
+    val vecttest = toDescaleRDD.first._2._2
     val size1 = vecttest.size
-    val maxArray = maxMinArray0(0)
-    val minArray = maxMinArray0(1)
+    val maxArray = maxMinArray._1
+    val minArray = maxMinArray._2
     toDescaleRDD.map{ case(clusterID, (id, vector)) => {
       var tabcoord = new Array[Double](size1)
-      for( ind0 <- 0 until size1) {
+      for( ind0 <- 0 until size1 ) {
         val coordXi = vector(ind0) * (maxArray(ind0) - minArray(ind0)) + minArray(ind0)
         tabcoord(ind0) = coordXi
       }
@@ -408,7 +408,7 @@ object MsLsh {
    * Results look's like RDD.[ID,Centroïd_Vector,cluster_Number]
    */
   def imageAnalysis(msmodel:Mean_shift_lsh_model) : RDD[(Long, Vector, Int)] = 
-    descaleRDD(msmodel.labelizedRDD, msmodel.maxMinArray).map{ case(clusterID, id, _) => (id,msmodel.clustersCenter(clusterID), clusterID) }
+    descaleRDD(msmodel.labelizedRDD, msmodel.maxMinArray).map{ case(clusterID, id, _) => (id, msmodel.clustersCenter(clusterID), clusterID) }
 
   /**
    * Save result for an image analysis
@@ -431,9 +431,9 @@ object MsLsh {
   /**
    * Save clusters's label, cardinality and centroid
    */
-  def saveClusterInfo(msmodel:Mean_shift_lsh_model,path:String) : Unit = {
+  def saveClusterInfo(msmodel:Mean_shift_lsh_model, path:String) : Unit = {
     val centroidsWithID = msmodel.clustersCenter.toArray
-    val cardClust = msmodel.labelizedRDD.countByKey 
+    val cardClust = msmodel.clustersCardinalities 
     val strToWrite = centroidsWithID.map{ case(clusterID, centroid) => (clusterID ,cardClust(clusterID), centroid) }.sortBy(_._1).mkString("\n")
     val fw = new FileWriter(path, true)
     fw.write(strToWrite)

@@ -110,11 +110,11 @@ object Fcts extends Serializable {
   /**
    * Restore centroid's original value
    */
-  def descaleRDDcentroid(rdd1:RDD[(Int, Vector)], maxMinArray0:Array[Array[Double]]) : RDD[(Int, Vector)] = {
+  def descaleRDDcentroid(rdd1:RDD[(Int, Vector)], maxMinArray:(Array[Double], Array[Double])) : RDD[(Int, Vector)] = {
     val vecttest = rdd1.first._2
     val size1 = vecttest.size
-    val maxArray = maxMinArray0(0)
-    val minArray = maxMinArray0(1)
+    val maxArray = maxMinArray._1
+    val minArray = maxMinArray._2
     val rdd2 = rdd1.map{ case(label, vector) => {
       val tabcoord = new Array[Double](size1)
       for( ind <- 0 until size1) {

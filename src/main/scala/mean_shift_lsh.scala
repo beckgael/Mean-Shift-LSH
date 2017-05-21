@@ -232,19 +232,17 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
     val labelizing = () => 
     {
       val clusterByLshBucket = readyToLabelization.mapPartitionsWithIndex( (ind, it) => {
-        var stop = 1
         val labeledData = ListBuffer.empty[(Int, (Long, Vector, Vector))]
         val bucket = it.toBuffer
         var mod1 = bucket(Random.nextInt(bucket.size))._2
         var clusterID = (ind + 1) * 10000
-        while ( stop != 0 ) {
-            val rdd_Clust_i_ind = bucket.filter{ case(_, mod, originalVector) => { Vectors.sqdist(mod, mod1) <= epsilon1 } }
-            val rdd_Clust_i2_ind = rdd_Clust_i_ind.map{ case(id, mod, originalVector) => (clusterID, (id, mod, originalVector))}
-            labeledData ++= rdd_Clust_i2_ind
-            // We keep Y* whose distance is greather than threshold
-            bucket --= rdd_Clust_i_ind
-            stop = bucket.size
-            if(stop != 0) mod1 = bucket(Random.nextInt(bucket.size))._2
+        while ( bucket.size != 0 )
+        {
+            val closestCentroids = bucket.filter{ case(_, mod, originalVector) => { Vectors.sqdist(mod, mod1) <= epsilon1 } }
+            val closestCentroids2 = closestCentroids.map{ case(id, mod, originalVector) => (clusterID, (id, mod, originalVector))}
+            labeledData ++= closestCentroids2
+            bucket --= closestCentroids
+            if( bucket.size != 0 ) mod1 = bucket(Random.nextInt(bucket.size))._2
             clusterID += 1
         }
         labeledData.toIterator
@@ -319,7 +317,6 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
         for( idxR <- idxToReplace )
         {
           val (idR, _, vectorR, cardinalityR, originalClusterIDR) = toGatherCentroids(idxR)
-          clusterIDsToRemove += originalClusterIDR
           clusterIDsOfSmallerOne -= originalClusterIDR
           littleClusters -= ( (idR, originalClusterIDR, vectorR, cardinalityR, originalClusterIDR) )
           toGatherCentroids(idxR) = (idxR, closestClusterID, vectorR, totSize, originalClusterIDR)

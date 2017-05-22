@@ -371,7 +371,7 @@ object MsLsh {
    *
    */
 
-  def train(sc:SparkContext, data:RDD[(Long,Vector)], k:Int, epsilon1:Double, epsilon2:Double, yStarIter:Int, cmin:Int, normalisation:Boolean, w:Int, nbseg:Int, nbblocs1:Int, nbblocs2:Int, nbLabelIter:Int) : ArrayBuffer[Mean_shift_lsh_model] =
+  def train(sc:SparkContext, data:RDD[(Long,Vector)], k:Int, epsilon1:Double, epsilon2:Double, yStarIter:Int, cmin:Int, normalisation:Boolean, w:Double, nbseg:Int, nbblocs1:Int, nbblocs2:Int, nbLabelIter:Int) : ArrayBuffer[Mean_shift_lsh_model] =
       new MsLsh(k, epsilon1, epsilon2, yStarIter, cmin, normalisation, w, nbseg, nbblocs1, nbblocs2, nbLabelIter).run(sc, data)
 
   /**

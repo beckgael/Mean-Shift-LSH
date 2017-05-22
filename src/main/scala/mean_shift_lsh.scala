@@ -42,9 +42,9 @@ import java.io.FileWriter
 /**
  * The major class where MS-LSH algorithm and prediction fonction are implemented
  */
-class MsLsh private (private var k:Int, private var epsilon1:Double, private var epsilon2:Double, private var yStarIter:Int, private var cmin:Int, private var normalisation:Boolean, private var w:Int, private var nbseg:Int, private var nbblocs1:Int, private var nbblocs2:Int, private var nbLabelIter:Int) extends Serializable {  
+class MsLsh private (private var k:Int, private var epsilon1:Double, private var epsilon2:Double, private var yStarIter:Int, private var cmin:Int, private var normalisation:Boolean, private var w:Double, private var nbseg:Int, private var nbblocs1:Int, private var nbblocs2:Int, private var nbLabelIter:Int) extends Serializable {  
 
-  def this() = this(50, 0.001, 0.05, 10, 0, true, 1, 100, 100, 50, 5)
+  def this() = this(50, 0.001, 0.05, 10, 0, true, 1.0, 100, 100, 50, 5)
   
   /**
    * Set normalisation boolean
@@ -57,7 +57,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
   /**
    * Set w
    */
-  def set_w(newW:Int) : this.type = {
+  def set_w(newW:Double) : this.type = {
     this.w = newW
     this
   }

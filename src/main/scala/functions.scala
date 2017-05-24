@@ -91,12 +91,12 @@ object Fcts extends Serializable {
     val vecttest = rdd1.first._2
     val size1 = vecttest.size
 
-    val minMaxArray = rdd1.map{ case(id, vector) => vector.toArray.map(value => (value, value))}.reduce( (v1, v2) => v1.zip(v2).map{ case(((min1, max1), (min2, max2))) => (min(min1, min2), max(max1, max2))})
+    val minMaxArray = rdd1.map{ case (id, vector) => vector.toArray.map(value => (value, value))}.reduce( (v1, v2) => v1.zip(v2).map{ case (((min1, max1), (min2, max2))) => (min(min1, min2), max(max1, max2))})
 
-    val minArray = minMaxArray.map{ case((min, max)) => min }
-    val maxArray = minMaxArray.map{ case((min, max)) => max }
+    val minArray = minMaxArray.map{ case ((min, max)) => min }
+    val maxArray = minMaxArray.map{ case ((min, max)) => max }
 
-    val rdd2 = rdd1.map{ case(id, vector) => {
+    val rdd2 = rdd1.map{ case (id, vector) => {
       val tabcoord = new Array[Double](size1)
       for( ind <- 0 until size1) {
         val coordXi = ( vector(ind) - minArray(ind) ) / (maxArray(ind) - minArray(ind))
@@ -115,7 +115,7 @@ object Fcts extends Serializable {
     val size1 = vecttest.size
     val maxArray = maxMinArray._1
     val minArray = maxMinArray._2
-    val rdd2 = rdd1.map{ case(label, vector) => {
+    val rdd2 = rdd1.map{ case (label, vector) => {
       val tabcoord = new Array[Double](size1)
       for( ind <- 0 until size1) {
         val coordXi = vector(ind) * ( maxArray(ind) - minArray(ind) ) + minArray(ind)

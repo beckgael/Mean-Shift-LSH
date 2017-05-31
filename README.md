@@ -16,9 +16,11 @@ This algorithm was created during an internship at Computer Science Laboratory (
 * **cmin**  is the threshold under which clusters with fewer than cmin members are merged with the next nearest cluster.
 * **normalisation** is a flag if the data should be first normalized (X-Xmin)/(Xmax-Xmin)  before clustering.
 * **w** is a uniformisation constant for LSH.
+* **ratioToStop** is the percentage of data that need to not have converged in order to considere to stop gradient ascent iterations.
 * **yStarIter** is the maximum number of iterations in the gradient ascent in the mean shift update.
-* **epsilon1** is the threshold under which two final mean shift iterates are considered to be in the same cluster.
-* **epsilon2** is the threshold under which two final clusters are considered to be the same.
+* **epsilon1** is the threshold under which we considere a mod to have converged.
+* **epsilon2** is the threshold under which two final mean shift iterates are considered to be in the same cluster.
+* **epsilon3** is the threshold under which two final clusters are considered to be the same.
 * **nbLabelIter** is the number of iteration for the labelisation step, it determines the number of final models
 
 
@@ -43,8 +45,10 @@ To carry out image analysis, it is recommended to convert the usual color format
   val models = meanShift.train(  sc,
                           parsedData,
                           k=60,
-                          epsilon1=0.05,
+                          epsilon1=0.001,
                           epsilon2=0.05,
+                          epsilon3=0.06,
+                          ratioToStop=0.01,
                           yStarIter=10,
                           cmin=0,
                           normalisation=true,
@@ -71,8 +75,8 @@ The picture on top left corner is the #117 from Berkeley Segmentation Dataset an
 * **nbblocs1** : 200 (top right) , 500 (bottom left), 1000 (bottom right) 
 * **nbblocs2** : 1
 * **k** : 50
-* **epsilon1** : 0.05
-* **epsilon2** : 0.05 // doesn't matter with nbblocs2 = 1
+* **epsilon2** : 0.05
+* **epsilon3** : 0.05 // doesn't matter with nbblocs2 = 1
 * **yStarIter** : 10
 * **nbLabelIter** : 1
 * **w** : 1

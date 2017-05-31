@@ -233,8 +233,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
     val lineageRDDs = ArrayBuffer.empty[RDD[(Long, Vector, Vector, Double, Boolean)]]
     lineageRDDs += rdd_LSH
    
-    val epsilon0 = 0.05
-    var stop = false
+    var stopIter = false
     var ind = 0
 
     // We fix the number of iterations
@@ -255,21 +254,21 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
     }
     else
     { 
-      while( ind < yStarIter && ! stop )
+      while( ind < yStarIter && ! stopIter )
       {
         val rdd_LSH_ord =  lineageRDDs(ind).sortBy({ case (_, _, _, hashValue, _) => hashValue}, ascending=true, nbblocs1).mapPartitions(it => {
           val approxKNN = it.toArray
           approxKNN.map{ case (id, originalVector, mod, hashV, _) => {
             val distKNNFromCurrentPoint = approxKNN.map{ case (_, originalVector2, mod2, hashV2, _) => (originalVector2, Vectors.sqdist(mod, originalVector2)) }.sortBy(_._2)
             val newMod = Fcts.computeCentroid(distKNNFromCurrentPoint.take(k), k)
-            val stop = Vectors.sqdist(mod, newMod) <= epsilon0
+            val stop = Vectors.sqdist(mod, newMod) <= epsilon1
             (id, originalVector, newMod, stop)
           }}.toIterator
         })
         lineageRDDs += rdd_LSH_ord.map{ case (id, originalVector, mod, stop) => (id, originalVector, mod, Fcts.hashfunc(mod, w, b, hashTab.value), stop) }.cache
-        val unconvergedPoints = lineageRDDs(ind + 1).filter{ case (_, _, _, _, stop) => stop == true }.count
+        val unconvergedPoints = lineageRDDs(ind + 1).filter{ case (_, _, _, _, stop) => stop == false }.count
         lineageRDDs(ind).unpersist(false)
-        stop = unconvergedPoints <= ratioToStop * size
+        stopIter = unconvergedPoints <= ratioToStop * size
         ind += 1
       }
     }
@@ -416,7 +415,7 @@ object MsLsh {
    * @param epsilon1 : threshold under which we stop iteration in gradient ascent
    * @param epsilon2 : threshold under which we give the same label to two points
    * @param epsilon3 : threshold under which we give the same label to two close clusters
-   * @param ratioToStop : % of data that have to converged in order to stop iteration in gradient ascent
+   * @param ratioToStop : % of data that have NOT converged in order to stop iteration in gradient ascent
    * @param yStarIter : Number of iteration for modes search
    * @param cmin : threshold under which we fusion little cluster with the nearest cluster
    * @param normalisation : Normalise the dataset (it is recommand to have same magnitude order beetween features)

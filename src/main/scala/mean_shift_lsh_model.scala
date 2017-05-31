@@ -26,8 +26,8 @@ import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import scala.collection.mutable.ListBuffer
 
-class Mean_shift_lsh_model(val clustersCenter:Map[Int, Vector], val clustersCardinalities:scala.collection.Map[Int, Long], val labelizedRDD:RDD[(Int,(Long, Vector))] ,val maxMinArray:(Array[Double], Array[Double])) extends Serializable {
-
+class Mean_shift_lsh_model(val clustersCenter:Map[Int, Vector], val clustersCardinalities:scala.collection.Map[Int, Long], val labelizedRDD:RDD[(Int,(Long, Vector))] ,val maxMinArray:(Array[Double], Array[Double])) extends Serializable
+{
   def numCluster : Int = clustersCenter.size
 
   def predict(point:Vector) : Int = MsLsh.prediction(point, clustersCenter)
@@ -37,6 +37,4 @@ class Mean_shift_lsh_model(val clustersCenter:Map[Int, Vector], val clustersCard
     for( ind <- 0 until points.size) res += MsLsh.prediction(points(ind), clustersCenter)
     res
   }
-
-
 }

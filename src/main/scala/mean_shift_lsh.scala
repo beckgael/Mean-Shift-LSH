@@ -42,9 +42,9 @@ import java.io.FileWriter
 /**
  * The major class where MS-LSH algorithm and prediction fonction are implemented
  */
-class MsLsh private (private var k:Int, private var epsilon1:Double, private var epsilon2:Double, private var yStarIter:Int, private var cmin:Int, private var normalisation:Boolean, private var w:Double, private var nbseg:Int, private var nbblocs1:Int, private var nbblocs2:Int, private var nbLabelIter:Int) extends Serializable {  
+class MsLsh private (private var k:Int, private var epsilon1:Double, private var epsilon2:Double, private var epsilon3:Double, private var ratioToStop:Double, private var yStarIter:Int, private var cmin:Int, private var normalisation:Boolean, private var w:Double, private var nbseg:Int, private var nbblocs1:Int, private var nbblocs2:Int, private var nbLabelIter:Int) extends Serializable {  
 
-  def this() = this(50, 0.001, 0.05, 10, 0, true, 1.0, 100, 100, 50, 5)
+  def this() = this(50, 0.001, 0.05, 0.05, 0.05, 10, 0, true, 1.0, 100, 100, 50, 5)
   
   /**
    * Set normalisation boolean
@@ -95,18 +95,34 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
   }
   
   /**
-   * Set threshold 1 for labeling step
+   * Set threshold 1 for gradient ascent stop
+   */
+  def set_ratioToStop(ratioToStop_val:Double) : this.type = {
+    this.ratioToStop = ratioToStop_val
+    this
+  }  
+
+  /**
+   * Set threshold 1 for gradient ascent stop
    */
   def set_epsilon1(epsilon1_val:Double) : this.type = {
     this.epsilon1 = epsilon1_val
     this
   }  
-
+  
   /**
    * Set threshold 2 for labeling step
    */
   def set_epsilon2(epsilon2_val:Double) : this.type = {
     this.epsilon2 = epsilon2_val
+    this
+  }  
+
+  /**
+   * Set threshold 1 for labeling step
+   */
+  def set_epsilon3(epsilon3_val:Double) : this.type = {
+    this.epsilon3 = epsilon3_val
     this
   }
   
@@ -158,6 +174,11 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
    * Get threshold 2 value
    */
   def get_epsilon2 = this.epsilon2
+      
+  /**
+   * Get threshold 3 value
+   */
+  def get_epsilon3 = this.epsilon3
   
   /**
    * Get number of iteration for gradient ascend
@@ -173,6 +194,11 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
    * Get number of labelizing iteration
    */
   def get_nbLabelIter = this.nbLabelIter
+  
+  /**
+   * Get stoping ratio for gradient ascent
+   */
+  def get_ratioToStop = this.ratioToStop
   
   /**
    * Mean Shift LSH accomplish his clustering work
@@ -202,25 +228,54 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
     val b = Random.nextDouble * w
     val hashTab = sc.broadcast(Fcts.tabHash(nbseg, dim))
   
-    val rdd_LSH = normalizedOrNotRDD.map{ case (id, vector) => (id, vector, vector, Fcts.hashfunc(vector, w, b, hashTab.value)) }
+    val rdd_LSH = normalizedOrNotRDD.map{ case (id, vector) => (id, vector, vector, Fcts.hashfunc(vector, w, b, hashTab.value), false) }
     data.unpersist(true)
-    val lineageRDDs = new Array[RDD[(Long, Vector, Vector, Double)]](yStarIter + 1)
-    lineageRDDs(0) = rdd_LSH
+    val lineageRDDs = ArrayBuffer.empty[RDD[(Long, Vector, Vector, Double, Boolean)]]
+    lineageRDDs += rdd_LSH
    
-    for( ind <- 0 until yStarIter  )
+    val epsilon0 = 0.05
+    var stop = false
+    var ind = 0
+
+    // We fix the number of iterations
+    if( ratioToStop == 1.0 )
     {
-      val rdd_LSH_ord =  lineageRDDs(ind).sortBy({ case (_, _, _, hashValue) => hashValue}, ascending=true, nbblocs1).mapPartitions(it => {
-        val approxKNN = it.toArray
-        approxKNN.map{ case (id, originalVector, mod, hashV) => {
-          val distKNNFromCurrentPoint = approxKNN.map{ case (_, originalVector2, mod2, hashV2) => (originalVector2, Vectors.sqdist(mod, originalVector2)) }.sortBy(_._2)
-          (id, originalVector, Fcts.computeCentroid(distKNNFromCurrentPoint.take(k), k))
-        }}.toIterator
-      })
-      lineageRDDs(ind + 1) = rdd_LSH_ord.map{ case (id, originalVector, mod) => (id, originalVector, mod, Fcts.hashfunc(mod, w, b, hashTab.value))}
+      for( ind2 <- 0 until yStarIter )
+      {
+        val rdd_LSH_ord =  lineageRDDs(ind).sortBy({ case (_, _, _, hashValue, _) => hashValue}, ascending=true, nbblocs1).mapPartitions(it => {
+          val approxKNN = it.toArray
+          approxKNN.map{ case (id, originalVector, mod, hashV, stop) => {
+            val distKNNFromCurrentPoint = approxKNN.map{ case (_, originalVector2, mod2, hashV2, _) => (originalVector2, Vectors.sqdist(mod, originalVector2)) }.sortBy(_._2)
+            val newMod = Fcts.computeCentroid(distKNNFromCurrentPoint.take(k), k)
+            (id, originalVector, newMod, stop)
+          }}.toIterator
+        })
+        lineageRDDs += rdd_LSH_ord.map{ case (id, originalVector, mod, stop) => (id, originalVector, mod, Fcts.hashfunc(mod, w, b, hashTab.value), stop) }
+      }
+    }
+    else
+    { 
+      while( ind < yStarIter && ! stop )
+      {
+        val rdd_LSH_ord =  lineageRDDs(ind).sortBy({ case (_, _, _, hashValue, _) => hashValue}, ascending=true, nbblocs1).mapPartitions(it => {
+          val approxKNN = it.toArray
+          approxKNN.map{ case (id, originalVector, mod, hashV, _) => {
+            val distKNNFromCurrentPoint = approxKNN.map{ case (_, originalVector2, mod2, hashV2, _) => (originalVector2, Vectors.sqdist(mod, originalVector2)) }.sortBy(_._2)
+            val newMod = Fcts.computeCentroid(distKNNFromCurrentPoint.take(k), k)
+            val stop = Vectors.sqdist(mod, newMod) <= epsilon0
+            (id, originalVector, newMod, stop)
+          }}.toIterator
+        })
+        lineageRDDs += rdd_LSH_ord.map{ case (id, originalVector, mod, stop) => (id, originalVector, mod, Fcts.hashfunc(mod, w, b, hashTab.value), stop) }.cache
+        val unconvergedPoints = lineageRDDs(ind + 1).filter{ case (_, _, _, _, stop) => stop == true }.count
+        lineageRDDs(ind).unpersist(false)
+        stop = unconvergedPoints <= ratioToStop * size
+        ind += 1
+      }
     }
 
-    val readyToLabelization = if( nbblocs2 == 1 ) lineageRDDs.last.map{ case (id, mod, originalVector, hashV) => (id, mod, originalVector)}.coalesce(1)
-                              else lineageRDDs.last.sortBy({ case (_, _, _, hashValue) => hashValue}, ascending=true, nbblocs2).map{ case (id, mod, originalVector, hashV) => (id, mod, originalVector)}
+    val readyToLabelization = if( nbblocs2 == 1 ) lineageRDDs.last.map{ case (id, mod, originalVector, hashV, _) => (id, mod, originalVector)}.coalesce(1)
+                              else lineageRDDs.last.sortBy({ case (_, _, _, hashValue, _) => hashValue}, ascending=true, nbblocs2).map{ case (id, mod, originalVector, hashV, _) => (id, mod, originalVector)}
     
     if( nbLabelIter > 1 ) readyToLabelization.cache
 
@@ -238,7 +293,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
         var clusterID = (ind + 1) * 10000
         while ( bucket.size != 0 )
         {
-            val closestCentroids = bucket.filter{ case (_, mod, originalVector) => { Vectors.sqdist(mod, mod1) <= epsilon1 } }
+            val closestCentroids = bucket.filter{ case (_, mod, originalVector) => { Vectors.sqdist(mod, mod1) <= epsilon2 } }
             val closestCentroids2 = closestCentroids.map{ case (id, mod, originalVector) => (clusterID, (id, mod, originalVector))}
             labeledData ++= closestCentroids2
             bucket --= closestCentroids
@@ -275,7 +330,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
       var randomCentroidVector = centroids(Random.nextInt(centroids.size))._2
       var newClusterID = 0
       while ( centroids.size != 0 ) {
-        val closestClusters = centroids.filter{ case (clusterID, vector, clusterCardinality) => { Vectors.sqdist(vector, randomCentroidVector) <= epsilon2 }}
+        val closestClusters = centroids.filter{ case (clusterID, vector, clusterCardinality) => { Vectors.sqdist(vector, randomCentroidVector) <= epsilon3 }}
         // We compute the mean of the cluster
         val gatheredCluster = closestClusters.map{ case (clusterID, vector, clusterCardinality) => (vector.toArray, clusterCardinality) }.reduce( (a, b) => (a._1 + b._1, a._2 + b._2) )
         newCentroids += ( (newClusterID, Vectors.dense(gatheredCluster._1.map(_ / closestClusters.size))) )
@@ -358,8 +413,10 @@ object MsLsh {
    * @param sc : SparkContext`
    * @param data : an RDD[(String,Vector)] where String is the ID and Vector the rest of data
    * @param k : number of neighbours to look at during gradient ascent
-   * @param epsilon1 : threshold under which we give the same label to two points
-   * @param epsilon2 : threshold under which we give the same label to two close clusters
+   * @param epsilon1 : threshold under which we stop iteration in gradient ascent
+   * @param epsilon2 : threshold under which we give the same label to two points
+   * @param epsilon3 : threshold under which we give the same label to two close clusters
+   * @param ratioToStop : % of data that have to converged in order to stop iteration in gradient ascent
    * @param yStarIter : Number of iteration for modes search
    * @param cmin : threshold under which we fusion little cluster with the nearest cluster
    * @param normalisation : Normalise the dataset (it is recommand to have same magnitude order beetween features)
@@ -371,8 +428,8 @@ object MsLsh {
    *
    */
 
-  def train(sc:SparkContext, data:RDD[(Long,Vector)], k:Int, epsilon1:Double, epsilon2:Double, yStarIter:Int, cmin:Int, normalisation:Boolean, w:Double, nbseg:Int, nbblocs1:Int, nbblocs2:Int, nbLabelIter:Int) : ArrayBuffer[Mean_shift_lsh_model] =
-      new MsLsh(k, epsilon1, epsilon2, yStarIter, cmin, normalisation, w, nbseg, nbblocs1, nbblocs2, nbLabelIter).run(sc, data)
+  def train(sc:SparkContext, data:RDD[(Long,Vector)], k:Int, epsilon1:Double, epsilon2:Double, epsilon3:Double, ratioToStop:Double, yStarIter:Int, cmin:Int, normalisation:Boolean, w:Double, nbseg:Int, nbblocs1:Int, nbblocs2:Int, nbLabelIter:Int) : ArrayBuffer[Mean_shift_lsh_model] =
+      new MsLsh(k, epsilon1, epsilon2, epsilon3, ratioToStop, yStarIter, cmin, normalisation, w, nbseg, nbblocs1, nbblocs2, nbLabelIter).run(sc, data)
 
   /**
    * Restore RDD original value
@@ -434,6 +491,4 @@ object MsLsh {
    * Prediction function which tell in which cluster a vector should belongs to
    */
   def prediction(v:Vector, mapCentroid:Map[Int,Vector]) : Int = mapCentroid.map{ case (clusterID, centroid) => (clusterID, Vectors.sqdist(v, centroid)) }.toArray.sortBy(_._2).head._1
-} 
-
-
+}

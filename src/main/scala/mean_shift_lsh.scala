@@ -226,9 +226,9 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
     * Gradient ascent / Research of Y* 
     */
     val b = Random.nextDouble * w
-    val hashTab = sc.broadcast(Fcts.tabHash(nbseg, dim))
+    var hashTab = Fcts.tabHash(nbseg, dim)
   
-    val rdd_LSH = normalizedOrNotRDD.map{ case (id, vector) => (id, vector, vector, Fcts.hashfunc(vector, w, b, hashTab.value), false) }
+    val rdd_LSH = normalizedOrNotRDD.map{ case (id, vector) => (id, vector, vector, Fcts.hashfunc(vector, w, b, hashTab), false) }
     data.unpersist(true)
     val lineageRDDs = ArrayBuffer.empty[RDD[(Long, Vector, Vector, Double, Boolean)]]
     lineageRDDs += rdd_LSH
@@ -241,6 +241,8 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
     {
       for( ind2 <- 0 until yStarIter )
       {
+        // Increase convergence time
+        //hashTab = Fcts.tabHash(nbseg, dim)
         val rdd_LSH_ord =  lineageRDDs(ind).sortBy({ case (_, _, _, hashValue, _) => hashValue}, ascending=true, nbblocs1).mapPartitions(it => {
           val approxKNN = it.toArray
           approxKNN.map{ case (id, originalVector, mod, hashV, stop) => {
@@ -249,13 +251,15 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
             (id, originalVector, newMod, stop)
           }}.toIterator
         })
-        lineageRDDs += rdd_LSH_ord.map{ case (id, originalVector, mod, stop) => (id, originalVector, mod, Fcts.hashfunc(mod, w, b, hashTab.value), stop) }
+        lineageRDDs += rdd_LSH_ord.map{ case (id, originalVector, mod, stop) => (id, originalVector, mod, Fcts.hashfunc(mod, w, b, hashTab), stop) }
       }
     }
     else
     { 
       while( ind < yStarIter && ! stopIter )
       {
+        // Increase convergence time
+        //hashTab = Fcts.tabHash(nbseg, dim)
         val rdd_LSH_ord =  lineageRDDs(ind).sortBy({ case (_, _, _, hashValue, _) => hashValue}, ascending=true, nbblocs1).mapPartitions(it => {
           val approxKNN = it.toArray
           approxKNN.map{ case (id, originalVector, mod, hashV, _) => {
@@ -265,7 +269,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
             (id, originalVector, newMod, stop)
           }}.toIterator
         })
-        lineageRDDs += rdd_LSH_ord.map{ case (id, originalVector, mod, stop) => (id, originalVector, mod, Fcts.hashfunc(mod, w, b, hashTab.value), stop) }.cache
+        lineageRDDs += rdd_LSH_ord.map{ case (id, originalVector, mod, stop) => (id, originalVector, mod, Fcts.hashfunc(mod, w, b, hashTab), stop) }.cache
         val unconvergedPoints = lineageRDDs(ind + 1).filter{ case (_, _, _, _, stop) => stop == false }.count
         lineageRDDs(ind).unpersist(false)
         stopIter = unconvergedPoints <= ratioToStop * size
@@ -328,7 +332,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
       val oldToNewLabelMap = HashMap.empty[Int, Int]
       var randomCentroidVector = centroids(Random.nextInt(centroids.size))._2
       var newClusterID = 0
-      while ( centroids.size != 0 ) {
+      while ( ! centroids.isEmpty ) {
         val closestClusters = centroids.filter{ case (clusterID, vector, clusterCardinality) => { Vectors.sqdist(vector, randomCentroidVector) <= epsilon3 }}
         // We compute the mean of the cluster
         val gatheredCluster = closestClusters.map{ case (clusterID, vector, clusterCardinality) => (vector.toArray, clusterCardinality) }.reduce( (a, b) => (a._1 + b._1, a._2 + b._2) )
@@ -348,40 +352,45 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
       */
       val clusterIDsOfSmallerOne = numElemByCluster.filter{ case (clusterID, cardinality) => cardinality <= cmin }.keys.toBuffer
       val toGatherCentroids = newCentroids.zipWithIndex.map{ case ((clusterID, vector), id) => (id, clusterID, vector, numElemByCluster(clusterID), clusterID)}//.par
-      val littleClusters = toGatherCentroids.filter{ case (_, _, _, _, originalClusterID) => clusterIDsOfSmallerOne.contains(originalClusterID) }.toBuffer
+      val littleClusters = toGatherCentroids.filter{ case (_, _, _, cardinality, _) => cardinality <= cmin }.toBuffer
 
-      while( clusterIDsOfSmallerOne.size != 0 )
+      while( ! clusterIDsOfSmallerOne.isEmpty )
       {
-        val (idx, currentClusterID, vector2, sizeCurrent, _) = littleClusters(Random.nextInt(littleClusters.size)) 
-        val sortedClosestCentroid = toGatherCentroids.map{ case (id, newClusterID, vector, cardinality, _) => (id, vector, Vectors.sqdist(vector, vector2), newClusterID, cardinality) }.sortBy{ case (_, _, dist, _, _) => dist }
+        val (idx, currentClusterID, origVector, sizeCurrent, _) = littleClusters(Random.nextInt(littleClusters.size)) 
+        val sortedClosestCentroid = toGatherCentroids.map{ case (id, newClusterID, vector, cardinality, _) => (id, vector, Vectors.sqdist(vector, origVector), newClusterID, cardinality) }.sortBy{ case (_, _, dist, _, _) => dist }
         val (idx2, vector, _, closestClusterID, closestClusterSize) = sortedClosestCentroid.find(_._4 != currentClusterID).get
         var totSize = sizeCurrent + closestClusterSize
-        val lookForNN = ArrayBuffer(vector, vector2)
+        val lookForNN = ArrayBuffer(vector, origVector)
         val oldClusterIDs = ArrayBuffer(currentClusterID, closestClusterID)
         val idxToReplace = ArrayBuffer(idx, idx2)
         while( totSize <= cmin )
         {
-          val (idxK, vectorK, _, clusterIDK, cardinalityK) = lookForNN.map(v => toGatherCentroids.map{ case (id, newClusterID, vector, cardinality, _) => (id, vector, Vectors.sqdist(vector, vector2), newClusterID, cardinality) }.filter{ case (_, _, _, newClusterID, _) => ! oldClusterIDs.contains(newClusterID) }.sortBy{ case (_, _, dist, _, _) => dist }.head).sortBy{ case (_, _, dist, _, _) => dist }.head
+          val (idxK, vectorK, _, clusterIDK, cardinalityK) = lookForNN.map(v => toGatherCentroids.map{ case (id, newClusterID, vector, cardinality, _) => (id, vector, Vectors.sqdist(vector, origVector), newClusterID, cardinality) }.filter{ case (_, _, _, newClusterID, _) => ! oldClusterIDs.contains(newClusterID) }.sortBy{ case (_, _, dist, _, _) => dist }.head).sortBy{ case (_, _, dist, _, _) => dist }.head
           lookForNN += vectorK
           oldClusterIDs += clusterIDK
           idxToReplace += idxK
           totSize += cardinalityK
         }
 
+        idxToReplace ++= toGatherCentroids.filter{ case (_, newClusterID, _, _, _) => newClusterID == closestClusterID }.map{ case (id, _, _, _, _) => id }
+
         for( idxR <- idxToReplace )
         {
           val (idR, _, vectorR, cardinalityR, originalClusterIDR) = toGatherCentroids(idxR)
-          clusterIDsOfSmallerOne -= originalClusterIDR
-          littleClusters -= ( (idR, originalClusterIDR, vectorR, cardinalityR, originalClusterIDR) )
+          if( totSize > cmin)
+          {
+            clusterIDsOfSmallerOne -= originalClusterIDR
+            littleClusters -= ( (idR, originalClusterIDR, vectorR, cardinalityR, originalClusterIDR) )
+          }
           toGatherCentroids(idxR) = (idxR, closestClusterID, vectorR, totSize, originalClusterIDR)
         }
       }
 
       val newCentroidIDByOldOneMap = toGatherCentroids.map{ case (id, newClusterID, vector, cardinality, originalClusterID) => (originalClusterID, newClusterID) }.toMap
 
-      val newCentroidIDByOldOneMapBC = sc.broadcast(oldToNewLabelMap.map{ case (k, v) => (k, newCentroidIDByOldOneMap(v)) })
+      val newCentroidIDByOldOneMapBC = oldToNewLabelMap.map{ case (k, v) => (k, newCentroidIDByOldOneMap(v)) }
     
-      val partitionedRDDF = rdd_Ystar_labeled.map{ case (clusterID, (id, originalVector, mod)) => (newCentroidIDByOldOneMapBC.value(clusterID), (id, originalVector)) }.partitionBy(new HashPartitioner(dp))
+      val partitionedRDDF = rdd_Ystar_labeled.map{ case (clusterID, (id, originalVector, mod)) => (newCentroidIDByOldOneMapBC(clusterID), (id, originalVector)) }.partitionBy(new HashPartitioner(dp))
     
       val partitionedRDDFforStats = partitionedRDDF.map{ case (clusterID, (id, originalVector)) => (clusterID, (originalVector.toArray)) }.cache
       val clustersCardinalities = partitionedRDDFforStats.countByKey

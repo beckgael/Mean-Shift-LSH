@@ -33,7 +33,7 @@ class Mean_shift_lsh_model(val clustersCenter:Map[Int, Vector], val clustersCard
   def predict(point:Vector) : Int = MsLsh.prediction(point, clustersCenter)
 
   def predict(points:Array[Vector]) : ListBuffer[Int] = {
-    var res = ListBuffer.empty[Int]
+    val res = ListBuffer.empty[Int]
     for( ind <- 0 until points.size) res += MsLsh.prediction(points(ind), clustersCenter)
     res
   }

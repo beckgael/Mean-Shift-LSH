@@ -2,13 +2,15 @@ name := "Mean-Shift-LSH"
 
 version := "1.1"
 
-//organization := "spartakus"
+organization := "Clustering4Ever"
 
-//bintrayOrganization := Some("spark-clustering-notebook")
+bintrayRepository := "Clustering4Ever"
 
-scalaVersion := "2.10.5"
+bintrayOrganization := Some("clustering4ever")
 
-val sparkVersion = "1.6.2"
+scalaVersion := "2.11.8"
+
+val sparkVersion = "2.1.1"
 
 libraryDependencies ++= Seq(
 	"org.apache.spark" %% "spark-core" % sparkVersion % "provided",

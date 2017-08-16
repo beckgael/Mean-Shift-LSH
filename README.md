@@ -1,4 +1,4 @@
-[ ![Download](https://api.bintray.com/packages/beckgael/maven/mean-shift-lsh/images/download.svg) ](https://bintray.com/beckgael/maven/mean-shift-lsh)
+[ ![Download](https://api.bintray.com/packages/clustering4ever/Clustering4Ever/mean-shift-lsh/images/download.svg) ](https://bintray.com/clustering4ever/Clustering4Ever/mean-shift-lsh)
 
 # Distributed Nearest Neighbours Mean Shift with Locality Sensitive Hashing DNNMS-LSH
 

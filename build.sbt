@@ -6,7 +6,7 @@ organization := "Clustering4Ever"
 
 bintrayRepository := "Clustering4Ever"
 
-bintrayOrganization := Some("clustering4ever")
+//bintrayOrganization := Some("clustering4ever")
 
 scalaVersion := "2.11.8"
 

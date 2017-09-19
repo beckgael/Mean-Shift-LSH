@@ -23,7 +23,7 @@
 package msLsh
 
 import scala.util.Random
-import scala.collection.mutable.{ArrayBuffer, ListBuffer, HashMap}
+import scala.collection.mutable.{ArrayBuffer, ListBuffer, HashMap, HashSet}
 import spire.implicits._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, HashPartitioner}
@@ -362,7 +362,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
         var totSize = sizeCurrent + closestClusterSize
         val lookForNN = ArrayBuffer(vector, origVector)
         val oldClusterIDs = ArrayBuffer(currentClusterID, closestClusterID)
-        val idxToReplace = ArrayBuffer(idx, idx2)
+        val idxToReplace = HashSet(idx, idx2)
         while( totSize <= cmin )
         {
           val (idxK, vectorK, _, clusterIDK, cardinalityK) = lookForNN.map(v => toGatherCentroids.map{ case (id, newClusterID, vector, cardinality, _) => (id, vector, Vectors.sqdist(vector, origVector), newClusterID, cardinality) }.filter{ case (_, _, _, newClusterID, _) => ! oldClusterIDs.contains(newClusterID) }.sortBy{ case (_, _, dist, _, _) => dist }.head).sortBy{ case (_, _, dist, _, _) => dist }.head
@@ -372,7 +372,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
           totSize += cardinalityK
         }
 
-        idxToReplace ++= toGatherCentroids.filter{ case (_, newClusterID, _, _, _) => newClusterID == closestClusterID }.map{ case (id, _, _, _, _) => id }
+        idxToReplace ++= toGatherCentroids.filter{ case (_, newClusterID, _, _, _) => oldClusterIDs.contains(newClusterID) }.map{ case (id, _, _, _, _) => id }
 
         for( idxR <- idxToReplace )
         {

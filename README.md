@@ -4,8 +4,11 @@
 
 This scalable algorithm was created during an internship at Computer Science Laboratory (Laboratoire d'Informatique de Paris Nord, LIPN) at the University of Paris 13, with Lebbah Mustapha, Duong Tarn, Azzag Hanene and Beck Gaël. Its purpose is to provide an efficient distributed implementation to cluster large multivariate multidimensional data sets (Big Data)  Nearest neighbor mean shift (NNMS) defines clusters in terms of locally density regions in the data density. The main advantages of NNMS are that it can **detect automatically the number of clusters** in the data set and **detect non-ellipsoidal** clusters, in contrast to k-means clustering. Exact nearest neighbors calculations in the standard NNMS prevent from being used on Big Data so we introduce approximate nearest neighbors via Locality Sensitive Hashing (LSH), which are based on random scalar projections of the data. To further improve the scalability, we implement NNMS-LSH in the distributed Spark/Scala ecosystem.
 
-## Interesting Spark algorithms done at LIPN
-### https://github.com/Spark-clustering-notebook
+## Linked publication
+* G. Beck, T. Duong, H. Azzag and M. Lebbah, "Distributed mean shift clustering with approximate nearest neighbours," 2016 International Joint Conference on Neural Networks (IJCNN), Vancouver, BC, 2016, pp. 3110-3115. doi: 10.1109/IJCNN.2016.7727595
+* Tarn Duong, Gael  Beck, Hanene Azzag, Mustapha Lebbah. Nearest neighbour estimators of density derivatives, with application to mean shift clustering. Pattern Recognition Letters. doi = http://dx.doi.org/10.1016/j.patrec.2016.06.021
+
+## [Interesting Spark algorithms done at LIPN](https://github.com/Spark-clustering-notebook)
 
 ### Parameters
 

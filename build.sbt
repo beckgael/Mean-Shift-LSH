@@ -1,6 +1,6 @@
 name := "Mean-Shift-LSH"
 
-version := "1.1"
+version := "1.2"
 
 organization := "Clustering4Ever"
 

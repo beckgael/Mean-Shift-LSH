@@ -15,11 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/**
- * @author Beck Gaël
- */
-
 package msLsh
 
 import scala.util.Random
@@ -33,177 +28,18 @@ import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.mllib.feature.StandardScaler
 import java.io.FileWriter
 /**
+ * @author Beck Gaël
  * Mean-Shift-LSH clustering 
  * This algorithm could be used to analyse complex multivariate multidimensional data.
  * It can also be apply in order to analyse image, to use this features it is recommanded to convert image from RGB space to L*u*v* space
- */
-
-
-/**
  * The major class where MS-LSH algorithm and prediction fonction are implemented
  */
-class MsLsh private (private var k:Int, private var epsilon1:Double, private var epsilon2:Double, private var epsilon3:Double, private var ratioToStop:Double, private var yStarIter:Int, private var cmin:Int, private var normalisation:Boolean, private var w:Double, private var nbseg:Int, private var nbblocs1:Int, private var nbblocs2:Int, private var nbLabelIter:Int) extends Serializable {  
-
-  def this() = this(50, 0.001, 0.05, 0.05, 0.05, 10, 0, true, 1.0, 100, 100, 50, 5)
-  
-  /**
-   * Set normalisation boolean
-   */
-  def set_boolnorm(bool1:Boolean) : this.type = {
-    this.normalisation = bool1
-    this
-  }
-    
-  /**
-   * Set w
-   */
-  def set_w(newW:Double) : this.type = {
-    this.w = newW
-    this
-  }
-  
-  /**
-   * Set image analysis boolean
-   */
-  def set_nbseg(nbseg1:Int) : this.type = {
-    this.nbseg = nbseg1
-    this
-  }
-  
-  /**
-   * Set image analysis boolean
-   */
-  def set_nbblocs1(bloc1:Int) : this.type = {
-    this.nbblocs1 = bloc1
-    this
-  }
-    
-  /**
-   * Set image analysis boolean
-   */
-  def set_nbblocs2(bloc2:Int) : this.type = {
-    this.nbblocs2 = bloc2
-    this
-  }
-  
-  /**
-   * Set k value
-   */
-  def set_k(kval:Int) : this.type = {
-    this.k = kval
-    this
-  }
-  
-  /**
-   * Set threshold 1 for gradient ascent stop
-   */
-  def set_ratioToStop(ratioToStop_val:Double) : this.type = {
-    this.ratioToStop = ratioToStop_val
-    this
-  }  
-
-  /**
-   * Set threshold 1 for gradient ascent stop
-   */
-  def set_epsilon1(epsilon1_val:Double) : this.type = {
-    this.epsilon1 = epsilon1_val
-    this
-  }  
-  
-  /**
-   * Set threshold 2 for labeling step
-   */
-  def set_epsilon2(epsilon2_val:Double) : this.type = {
-    this.epsilon2 = epsilon2_val
-    this
-  }  
-
-  /**
-   * Set threshold 1 for labeling step
-   */
-  def set_epsilon3(epsilon3_val:Double) : this.type = {
-    this.epsilon3 = epsilon3_val
-    this
-  }
-  
-  /**
-   * Set iteration number for ascend gradient step
-   */
-  def set_yStarIter(yStarIter_val:Int) : this.type = {
-    this.yStarIter = yStarIter_val
-    this
-  }
-  
-  /**
-   * Set minimal cardinality for cluster
-   */
-  def set_cmin(cmin_val:Int) : this.type = {
-    this.cmin = cmin_val
-    this
-  }  
-    
-  /**
-   * Set number of time we makke labelizing step 
-   */
-  def set_nbLabelIter(nbLabelIter_val:Int) : this.type = {
-    this.nbLabelIter = nbLabelIter_val
-    this
-  }  
-  
-  /**
-   * Get k value
-   */
-  def get_k = this.k
-    
-  /**
-   * Get nbblocs1 value
-   */
-  def get_nbblocs1 = this.nbblocs1
-      
-  /**
-   * Get nbblocs2 value
-   */
-  def get_nbblocs2 = this.nbblocs2
-  
-  /**
-   * Get threshold 1 value
-   */
-  def get_epsilon1 = this.epsilon1
-    
-  /**
-   * Get threshold 2 value
-   */
-  def get_epsilon2 = this.epsilon2
-      
-  /**
-   * Get threshold 3 value
-   */
-  def get_epsilon3 = this.epsilon3
-  
-  /**
-   * Get number of iteration for gradient ascend
-   */
-  def get_yStarIter = this.yStarIter
-  
-  /**
-   * Get minimal cardinality value
-   */
-  def get_cmin = this.cmin
-      
-  /**
-   * Get number of labelizing iteration
-   */
-  def get_nbLabelIter = this.nbLabelIter
-  
-  /**
-   * Get stoping ratio for gradient ascent
-   */
-  def get_ratioToStop = this.ratioToStop
+class MsLsh (var k: Int, var epsilon1: Double, var epsilon2: Double, var epsilon3: Double, var ratioToStop: Double, var yStarIter: Int, var cmin: Int, var normalisation: Boolean, var w: Double, var nbseg: Int, var nbblocs1: Int, var nbblocs2: Int, var nbLabelIter: Int) extends Serializable {
   
   /**
    * Mean Shift LSH accomplish his clustering work
    */
-  def run(sc:SparkContext, data:RDD[(Long, Vector)]) : ArrayBuffer[Mean_shift_lsh_model] = 
+  def run(sc: SparkContext, data: RDD[(Long, Vector)]) : ArrayBuffer[Mean_shift_lsh_model] = 
   {
     /**
     * Initialisation 
@@ -218,7 +54,7 @@ class MsLsh private (private var k:Int, private var epsilon1:Double, private var
     /**
     * Dataset Normalisation
     */
-    val (normalizedOrNotRDD, maxArray, minArray) = if(normalisation) Fcts.scaleRdd(data) else (data, Array.empty[Double], Array.empty[Double])    
+    val (normalizedOrNotRDD, maxArray, minArray) = if( normalisation ) Fcts.scaleRdd(data) else (data, Array.empty[Double], Array.empty[Double])    
     val dim = normalizedOrNotRDD.first._2.size
     val maxMinArray = (maxArray, minArray) 
     

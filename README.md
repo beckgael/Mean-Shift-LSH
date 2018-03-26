@@ -1,6 +1,4 @@
-[ ![Download](https://api.bintray.com/packages/beckgael/Clustering4Ever/mean-shift-lsh/images/download.svg) ](https://bintray.com/beckgael/Clustering4Ever/mean-shift-lsh)
-
-# Distributed Nearest Neighbours Mean Shift with Locality Sensitive Hashing DNNMS-LSH
+# Distributed Nearest Neighbours Mean Shift with Locality Sensitive Hashing DNNMS-LSH [ ![Download](https://api.bintray.com/packages/beckgael/Clustering4Ever/mean-shift-lsh/images/download.svg) ](https://bintray.com/beckgael/Clustering4Ever/mean-shift-lsh)
 
 This scalable algorithm was created during an internship at Computer Science Laboratory (Laboratoire d'Informatique de Paris Nord, LIPN) at the University of Paris 13, with Lebbah Mustapha, Duong Tarn, Azzag Hanene and Beck Gaël. Its purpose is to provide an efficient distributed implementation to cluster large multivariate multidimensional data sets (Big Data)  Nearest neighbor mean shift (NNMS) defines clusters in terms of locally density regions in the data density. The main advantages of NNMS are that it can **detect automatically the number of clusters** in the data set and **detect non-ellipsoidal** clusters, in contrast to k-means clustering. Exact nearest neighbors calculations in the standard NNMS prevent from being used on Big Data so we introduce approximate nearest neighbors via Locality Sensitive Hashing (LSH), which are based on random scalar projections of the data. To further improve the scalability, we implement NNMS-LSH in the distributed Spark/Scala ecosystem.
 
@@ -22,8 +20,6 @@ This scalable algorithm was created during an internship at Computer Science Lab
 * **epsilon2** is the threshold under which two final mean shift iterates are considered to be in the same cluster.
 * **epsilon3** is the threshold under which two final clusters are considered to be the same.
 * **nbLabelIter** is the number of iteration for the labelisation step, it determines the number of final models
-
-
 
 ## Usage
 

@@ -1,12 +1,12 @@
 name := "Mean-Shift-LSH"
 
-version := "1.2"
+version := "1.2.1"
 
-organization := "Clustering4Ever"
+organization := "clustering4ever"
 
-bintrayRepository := "Clustering4Ever"
+//bintrayRepository := "Clustering4Ever"
 
-//bintrayOrganization := Some("clustering4ever")
+bintrayOrganization := Some("clustering4ever")
 
 scalaVersion := "2.11.8"
 
@@ -19,7 +19,5 @@ libraryDependencies ++= Seq(
 )
 
 licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))
-
-bintrayOrganization in bintray := None
 
 credentials += Credentials(Path.userHome / ".bintray" / ".credentials")
